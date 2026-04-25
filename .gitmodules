@@ -1,0 +1,6 @@
+[submodule "vendor/interprot"]
+	path = vendor/interprot
+	url = https://github.com/etowahadams/interprot.git
+[submodule "vendor/metagene-pretrain"]
+	path = vendor/metagene-pretrain
+	url = https://github.com/metagene-ai/metagene-pretrain.git
