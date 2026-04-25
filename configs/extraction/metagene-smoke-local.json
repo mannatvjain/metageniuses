@@ -1,0 +1,50 @@
+{
+  "input": {
+    "path": "data/curated_sequences/forward_pass_unique_sequences.jsonl",
+    "format": "jsonl",
+    "sequence_key": "sequence",
+    "id_key": "sequence_id",
+    "metadata_keys": [
+      "sequence_sha256",
+      "source_datasets",
+      "source_row_count",
+      "source_row_ids",
+      "label_class",
+      "label_disease",
+      "label_host_sex",
+      "label_isolation_source",
+      "label_source",
+      "label_taxonomy",
+      "label_virus_name"
+    ]
+  },
+  "preprocess": {
+    "uppercase": true,
+    "allowed_chars": "ACGTUN",
+    "replace_invalid_with": "N",
+    "max_invalid_fraction": 0.05,
+    "min_length": 1,
+    "max_length": 512,
+    "strip_whitespace": true
+  },
+  "model": {
+    "model_id": "metagene-ai/METAGENE-1",
+    "tokenizer_id": null,
+    "revision": null,
+    "local_files_only": true,
+    "trust_remote_code": false,
+    "device": "cpu",
+    "dtype": "float16"
+  },
+  "layer_selection": {
+    "layers": null,
+    "last_n_layers": 1
+  },
+  "runtime": {
+    "output_root": "data/activations",
+    "run_id": "metagene_smoke_local",
+    "batch_size": 1,
+    "max_rows_per_shard": 100000,
+    "max_reads": 1
+  }
+}

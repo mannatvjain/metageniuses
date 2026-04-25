@@ -110,6 +110,7 @@ class TransformersModelAdapter(ModelAdapter):
             local_files_only=cfg.local_files_only,
             trust_remote_code=cfg.trust_remote_code,
             torch_dtype=model_dtype,
+            low_cpu_mem_usage=True,
         )
         self._device = self._resolve_device(cfg.device)
         self._model = self._model.to(self._device)
@@ -201,4 +202,3 @@ class TransformersModelAdapter(ModelAdapter):
             token_ids=token_ids_batch,
             hidden_states_by_layer=hidden_states_by_layer,
         )
-
