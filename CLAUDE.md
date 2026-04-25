@@ -11,7 +11,8 @@ Project for Apart Research's AI x Bio Hackathon.
 [ASCII diagram or short prose describing the system. Fill this in once the project shape is clear.]
 
 ## Conventions
-- [Fill in as patterns emerge during development.]
+- **No self-attribution**: Claude is a tool, not a person. Never add Co-Authored-By lines or credit Claude as a co-author in commits or anywhere else.
+- **Owner tracking**: This is a multi-person project. Every commit must include the name of the human who instructed the Claude agent (e.g., `Instructed by: Mannat Jain` in the commit message). Ask if unclear.
 
 ## Dev commands
 ```bash
