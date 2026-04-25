@@ -21,6 +21,7 @@ Out of scope:
 2. Layer count is fixed before extraction starts via `layer_selection`.
 3. Layer indices use transformer-layer numbering starting at `1`.
 4. Captured rows are token-level hidden states for selected layers.
+5. Interrupted runs can resume with `runtime.resume=true` (or CLI `--resume`) using the same run directory.
 
 ## Artifact Contract
 
@@ -53,4 +54,3 @@ Per-layer shard contract:
 2. `metadata`: row-level metadata aligned to vectors.
 
 This makes SAE training independent of model loading.
-

@@ -1,22 +1,10 @@
 {
   "input": {
-    "path": "data/curated_sequences/forward_pass_unique_sequences.jsonl",
+    "path": "data/human_virus_class1.jsonl",
     "format": "jsonl",
     "sequence_key": "sequence",
     "id_key": "sequence_id",
-    "metadata_keys": [
-      "sequence_sha256",
-      "source_datasets",
-      "source_row_count",
-      "source_row_ids",
-      "label_class",
-      "label_disease",
-      "label_host_sex",
-      "label_isolation_source",
-      "label_source",
-      "label_taxonomy",
-      "label_virus_name"
-    ]
+    "metadata_keys": []
   },
   "preprocess": {
     "uppercase": true,
@@ -38,13 +26,13 @@
   },
   "layer_selection": {
     "layers": null,
-    "last_n_layers": 1
+    "last_n_layers": 4
   },
   "runtime": {
-    "output_root": "results/extraction",
+    "output_root": "results/cloud-extraction",
     "run_id": null,
     "batch_size": 4,
     "max_rows_per_shard": 100000,
-    "max_reads": null
+    "max_reads": 20000
   }
 }

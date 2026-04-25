@@ -42,9 +42,9 @@
   },
   "runtime": {
     "output_root": "data/test-activations",
-    "run_id": "metagene_smoke_local",
+    "run_id": "metagene_local_small",
     "batch_size": 1,
     "max_rows_per_shard": 100000,
-    "max_reads": 1
+    "max_reads": 10
   }
 }

@@ -35,10 +35,9 @@
   },
   "runtime": {
     "output_root": "data/test-activations",
-    "run_id": "tiny_fake_run",
+    "run_id": null,
     "batch_size": 2,
     "max_rows_per_shard": 1000,
     "max_reads": 10
   }
 }
-

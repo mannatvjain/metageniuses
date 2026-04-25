@@ -95,11 +95,12 @@ class ModelConfig:
 
 @dataclass(frozen=True)
 class RuntimeConfig:
-    output_root: str = "data/activations"
+    output_root: str = "results/extraction"
     run_id: str | None = None
     batch_size: int = 4
     max_rows_per_shard: int = 100000
     max_reads: int | None = None
+    resume: bool = False
 
     def validate(self) -> None:
         if self.batch_size < 1:
@@ -139,4 +140,3 @@ class ExtractionConfig:
         self.model.validate()
         self.layer_selection.validate()
         self.runtime.validate()
-

@@ -1,6 +1,6 @@
 {
   "input": {
-    "path": "/Users/astridteo/Downloads/metageniuses/data/human_virus_class1.jsonl",
+    "path": "data/human_virus_class1.jsonl",
     "format": "jsonl",
     "sequence_key": "sequence",
     "id_key": "sequence_id"
@@ -22,8 +22,8 @@
     "last_n_layers": 4
   },
   "runtime": {
-    "output_root": "/Users/astridteo/Downloads/metageniuses/data/activations",
-    "run_id": "metagene1_run",
+    "output_root": "data/test-activations",
+    "run_id": "metagene1_legacy_test",
     "batch_size": 4,
     "max_reads": 10
   }
