@@ -38,6 +38,7 @@ def encode_features(
     print(f"activation_scale={activation_scale:.4f}")
 
     sae = BatchTopKSAE.load(sae_checkpoint, device=device)
+    sae = sae.to(device)
     sae.eval()
     print(f"SAE loaded: d_model={sae.d_model}  d_sae={sae.d_sae}  k={sae.k}")
 
