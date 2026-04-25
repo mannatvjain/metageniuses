@@ -1,0 +1,44 @@
+{
+  "input": {
+    "path": "tests/fixtures/tiny_reads.jsonl",
+    "format": "jsonl",
+    "sequence_key": "sequence",
+    "id_key": "sequence_id",
+    "metadata_keys": [
+      "split"
+    ]
+  },
+  "preprocess": {
+    "uppercase": true,
+    "allowed_chars": "ACGTUN",
+    "replace_invalid_with": "N",
+    "max_invalid_fraction": 0.2,
+    "min_length": 1,
+    "max_length": 128,
+    "strip_whitespace": true
+  },
+  "model": {
+    "model_id": "fake/metagene-tiny",
+    "tokenizer_id": null,
+    "revision": null,
+    "local_files_only": true,
+    "trust_remote_code": false,
+    "device": "cpu",
+    "dtype": "float32"
+  },
+  "layer_selection": {
+    "layers": [
+      2,
+      4
+    ],
+    "last_n_layers": null
+  },
+  "runtime": {
+    "output_root": "data/test-activations",
+    "run_id": "tiny_fake_run",
+    "batch_size": 2,
+    "max_rows_per_shard": 1000,
+    "max_reads": 10
+  }
+}
+

@@ -1,0 +1,4 @@
+{"sequence_id":"read_001","sequence":"ACGTACGT","split":"train"}
+{"sequence_id":"read_002","sequence":"GGGTTTAA","split":"train"}
+{"sequence_id":"read_003","sequence":"acgtnnxx","split":"val"}
+

@@ -1,0 +1,2 @@
+"""MetaGeniuses project package."""
+

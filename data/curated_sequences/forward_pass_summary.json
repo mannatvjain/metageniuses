@@ -1,0 +1,37 @@
+{
+  "duplicate_sequences": 25993,
+  "filtered_too_long": 163,
+  "filtered_too_short": 0,
+  "max_length_filter": 5000,
+  "min_length_filter": 50,
+  "per_file": {
+    "human_microbiome_disease": {
+      "rows": 7830
+    },
+    "human_microbiome_multi-label": {
+      "rows": 7829
+    },
+    "human_microbiome_sex": {
+      "rows": 7830
+    },
+    "human_microbiome_source": {
+      "rows": 7829
+    },
+    "human_virus_infecting": {
+      "rows": 80000
+    },
+    "human_virus_reference": {
+      "rows": 370
+    }
+  },
+  "source_files": [
+    "human_microbiome_disease.csv",
+    "human_microbiome_multi-label.csv",
+    "human_microbiome_sex.csv",
+    "human_microbiome_source.csv",
+    "human_virus_infecting.csv",
+    "human_virus_reference.csv"
+  ],
+  "total_rows": 111688,
+  "unique_rows": 85532
+}

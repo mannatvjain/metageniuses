@@ -1,0 +1,5 @@
+data/activations/
+data/test-activations/
+__pycache__/
+*.pyc
+.DS_Store
