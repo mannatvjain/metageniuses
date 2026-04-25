@@ -29,7 +29,7 @@
     "last_n_layers": 4
   },
   "runtime": {
-    "output_root": "/workspace/metageniuses/results/cloud-extraction",
+    "output_root": "/root/results/cloud-extraction",
     "run_id": "metagene_prod_4layers_20k",
     "batch_size": 4,
     "max_rows_per_shard": 100000,
