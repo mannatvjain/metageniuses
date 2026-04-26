@@ -35,33 +35,52 @@
   - [x] `iter_layer_batches()` loader for SAE training
 - [x] Configs: tiny-test, local smoke, cloud prod (`configs/extraction/`)
 - [x] Tests: contracts, pipeline (fake adapter), preprocessing, resume
-- [ ] Run full extraction on RunPod (cloud prod config: 4 layers, 20k sequences)
+- [x] Run full extraction on RunPod (cloud prod config: 4 layers, 20k sequences)
 
 ## Phase 3: SAE Training
-- [ ] Adapt InterProt's SAE for MetaGene-1
-  - [ ] Change `d_model` from 1280 to 4096
-  - [ ] Keep TopK architecture, auxk dead neuron handling
-  - [ ] Wire SAE input from `iter_layer_batches()` contract
-  - [ ] Adjust hyperparameters: k, d_hidden, auxk (start with InterProt defaults, tune)
-- [ ] Choose target layer(s) — start with middle layers (12-20), based on InterProt findings
-- [ ] Train SAE on RunPod
-- [ ] Evaluate: reconstruction MSE, diff cross-entropy, num dead neurons
+- [x] Adapt InterProt's SAE for MetaGene-1
+  - [x] Change `d_model` from 1280 to 4096
+  - [x] Keep TopK architecture, auxk dead neuron handling
+  - [x] Wire SAE input from `iter_layer_batches()` contract
+  - [x] Adjust hyperparameters: k=64, d_hidden=32768, expansion=8x
+- [x] Choose target layer — layer 32 (last layer)
+- [x] Train SAE on RunPod (10 epochs, batch_size=4096, lr=0.0002)
+- [x] Evaluate: reconstruction MSE converged ~5e-5, dead features recovered to ~0%
+- [x] SAE artifacts saved: `data/sae_model/` (sae_final.pt, features.npy, sae_config.json, training curves)
 
 ## Phase 4: Feature Analysis & Interpretation
-- [ ] Extract and classify learned features
-  - [ ] By activation pattern (point, motif, domain, periodic, whole)
-  - [ ] By specificity (does feature activate on specific organism/pathogen types?)
-- [ ] Map features to known biology
-  - [ ] Viral vs bacterial vs eukaryotic sequences
-  - [ ] Known pathogen signatures
-  - [ ] Gene function annotations (if available)
-- [ ] Build simple visualization (activation heatmaps over sequences)
-- [ ] Linear probes on SAE features for downstream classification (pathogen detection?)
+- [x] SAE health check (experiment 3)
+  - [x] 803 dead (2.4%), 31,965 alive, ~892 active features/sequence
+  - [x] Activation distribution histograms, latent stats CSV
+- [x] Linear probe — pathogen detection (experiment 2)
+  - [x] 94.6% accuracy, 0.892 MCC, 0.987 AUROC on source label
+  - [x] Top predictive latents identified (coefficients + activation distributions)
+  - [x] Cumulative importance analysis: signal distributed across many latents
+- [x] Sequence UMAP (experiment 4)
+  - [x] Clear pathogen/non-pathogen separation in SAE feature space
+  - [x] 49 sub-clusters via HDBSCAN, many near-pure for one class
+- [x] Feature clustering (experiment 5)
+  - [x] 12 clusters, pathogen-enriched latents cluster together (bottom-left blue → upper-right red gradient)
+  - [x] 12,894 pathogen-enriched latents (log2 OR > 1), 2,451 pathogen-depleted
+- [x] Peyton's analysis pipeline merged (PR #1)
+  - [x] Fisher's exact test + BH-FDR enrichment
+  - [x] Linear probe with AUROC/AUPRC/F1
+  - [x] K-mer enrichment analysis
+  - [x] Differential signature (mean pathogen - mean non-pathogen vector)
+  - [x] Volcano plot, PCA/t-SNE/UMAP projections
+- [ ] Organism-specific pathogen detectors (experiment 1) — THE MAIN RESULT
+  - [ ] Enrichment scan → top pathogen-specific latents
+  - [ ] Pull top-activating sequences per latent
+  - [ ] BLAST against NCBI → organism identification
+  - [ ] Label latents: "Latent X is an Influenza A detector"
+- [ ] Cross-delivery generalization (experiment 6)
+  - [ ] Encode class 2 sequences through SAE (needs GPU)
+  - [ ] Test probe + enrichment stability across deliveries
 
 ## Phase 5: Writeup & Presentation
 - [ ] Write hackathon submission
   - [ ] Motivation: interpretable pandemic surveillance
   - [ ] Method: SAE on MetaGene-1 (adapted from InterProt)
-  - [ ] Results: discovered features, biological interpretation
+  - [ ] Results: organism-specific pathogen detector features + BLAST evidence
 - [ ] Prepare figures
 - [ ] Present

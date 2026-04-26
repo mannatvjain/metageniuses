@@ -10,6 +10,10 @@ Project for Apart Research's AI x Bio Hackathon.
 
 [ASCII diagram or short prose describing the system. Fill this in once the project shape is clear.]
 
+## Experiment organization
+- `experiment_plans/` — plans for experiments we can run now with existing data
+- `future_experiments/` — experiments that require GPU re-runs or new SAE inference (e.g., token-level activations, additional layer SAEs). Put any idea that needs RunPod / SAE encoder / new model inference here, not in `experiment_plans/`.
+
 ## Conventions
 - **No self-attribution**: Claude is a tool, not a person. Never add Co-Authored-By lines or credit Claude as a co-author in commits or anywhere else.
 - **Owner tracking**: This is a multi-person project. Every commit must include the name of the human who instructed the Claude agent (e.g., `Instructed by: Mannat Jain` in the commit message). Ask if unclear.

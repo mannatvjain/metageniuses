@@ -68,9 +68,60 @@
 | `vendor/interprot/` | InterProt SAE training code + visualizer (submodule: etowahadams/interprot) |
 | `vendor/metagene-pretrain/` | MetaGene-1 pretraining code (submodule: metagene-ai/metagene-pretrain) |
 
+## Experiment Plans
+| File | Purpose |
+|------|---------|
+| `experiment_plans/EXPERIMENTS.md` | Master experiment list with priorities and status |
+| `experiment_plans/01_organism_detectors.md` | Enrichment scan + BLAST to find organism-specific pathogen detector latents |
+| `experiment_plans/02_linear_probe.md` | Logistic regression on SAE features for pathogen classification |
+| `experiment_plans/03_sae_health_check.md` | Descriptive stats on SAE: dead/alive, sparsity, activation distributions |
+| `experiment_plans/04_sequence_umap.md` | UMAP projection of sequences colored by pathogen label |
+| `experiment_plans/05_feature_clustering.md` | Cluster latents by co-activation, check if pathogen features group together |
+| `experiment_plans/06_cross_delivery.md` | Train on class 1, test on class 2 (blocked on class 2 features) |
+| `experiment_plans/feature_labeling_mvp.md` | Top-100 feature labeling via specificity ranking + BLAST + LLM synthesis |
+| `experiment_plans/activation_pattern_classification.md` | Categorize all SAE latents by activation pattern (point, motif, periodic, whole, dead) |
+| `experiment_plans/linear_probe_pathogen.md` | Original linear probe plan (superseded by 02_linear_probe.md) |
+
+## Experiments (code + results)
+| File | Purpose |
+|------|---------|
+| `experiments/linear_probe_pathogen.py` | Linear probe: logistic regression on SAE features → pathogen detection |
+| `experiments/probe_visualizations.py` | Activation distributions + cumulative coefficient importance plots |
+| `experiments/sae_health_check.py` | Dead/alive census, sparsity stats, activation distribution figures |
+| `experiments/sequence_umap.py` | PCA → UMAP → scatter plot colored by pathogen label + HDBSCAN |
+| `experiments/feature_clustering.py` | Transpose features → PCA → UMAP → HDBSCAN on 32k latents |
+
+## Results
+| Directory | Purpose |
+|-----------|---------|
+| `results/linear_probe_pathogen/` | Probe accuracy/MCC/AUROC, top latents, ROC curve, coefficient plots |
+| `results/sae_health_check/` | Dead/alive stats, activation histograms, latent stats CSV |
+| `results/sequence_umap/` | UMAP scatter plot, PCA variance, sub-cluster assignments |
+| `results/feature_clustering/` | Latent UMAP (by cluster, enrichment, activation count), cluster summary |
+
+## Viz (UI)
+| File | Purpose |
+|------|---------|
+| `viz/package.json` | React 19 + Vite 7 + Tailwind 4 + Lucide + Recharts |
+| `viz/src/App.jsx` | Top-level router (landing vs explorer view) |
+| `viz/src/LandingPage.jsx` | Hero with rotating words, stats bar, feature cards |
+| `viz/src/ExplorerView.jsx` | 3-column layout: sidebar, feature panel, details |
+| `viz/src/Sidebar.jsx` | Searchable feature list |
+| `viz/src/FeaturePanel.jsx` | Activation histogram + top sequences |
+| `viz/src/SequenceStrip.jsx` | Per-token activation coloring |
+| `viz/src/DetailsPanel.jsx` | Feature metadata, taxa, activation pattern |
+| `viz/src/data/dummyFeatures.js` | Dummy SAE feature data (replace with real) |
+
+## SAE Analysis (Peyton's pipeline)
+| File | Purpose |
+|------|---------|
+| `src/metageniuses/sae/analyze.py` | Full SAE analysis CLI: enrichment, probe, k-mer, differential signature, plots |
+| `tests/sae/test_analyze.py` | Tests for analyze.py |
+
 ## Papers
 | File | Purpose |
 |------|---------|
 | `papers/InterProt.pdf` | InterProt paper — SAE on protein language model (prior art) |
 | `papers/metagene-1.pdf` | MetaGene-1 paper — metagenomic foundation model |
+| `papers/SURF_Paper.docx` | SURF paper — Bridget's PBD family specificity analysis using InterProt SAE |
 | `metagene paper.pdf` | Duplicate of MetaGene-1 paper (added by teammate) |
