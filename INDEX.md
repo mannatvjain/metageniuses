@@ -102,6 +102,9 @@
 | `experiment_plans/04_sequence_umap.md` | UMAP projection of sequences colored by pathogen label |
 | `experiment_plans/05_feature_clustering.md` | Cluster latents by co-activation, check if pathogen features group together |
 | `experiment_plans/06_cross_delivery.md` | Train on class 1, test on class 2 (blocked on class 2 features) |
+| `experiment_plans/07_layer_wise_probe_comparison.md` | SAE vs raw activation probes at layers 8, 16, 24, 32 |
+| `experiment_plans/08_activation_pattern_classification.md` | Classify latents as point/motif/periodic/whole across layers |
+| `experiment_plans/10_token_level_pathogen_localization.md` | Per-token pathogen scoring + BLAST on hotspot subsequences |
 | `experiment_plans/feature_labeling_mvp.md` | Top-100 feature labeling via specificity ranking + BLAST + LLM synthesis |
 | `experiment_plans/activation_pattern_classification.md` | Categorize all SAE latents by activation pattern (needs token-level data) |
 | `experiment_plans/linear_probe_pathogen.md` | Original linear probe plan (superseded by 02_linear_probe.md) |
@@ -110,6 +113,7 @@
 | File | Purpose |
 |------|---------|
 | `future_experiments/token_level_activations.md` | Re-run SAE encoder to get per-token activations (unlocks activation patterns, precise BLAST, heatmaps) |
+| `future_experiments/virus_species_classifier.md` | Multi-class virus species classifier from SAE features (target: ICML, not hackathon) |
 
 ## Experiments (code)
 | File | Purpose |

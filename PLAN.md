@@ -74,8 +74,19 @@
   - [ ] BLAST against NCBI → organism identification
   - [ ] Label latents: "Latent X is an Influenza A detector"
 - [ ] Cross-delivery generalization (experiment 6)
-  - [ ] Encode class 2 sequences through SAE (needs GPU)
+  - [x] Encode class 2 sequences through SAE — received from Bridget (data/sae_model/features_class2.npy)
   - [ ] Test probe + enrichment stability across deliveries
+
+## Phase 4b: Multi-Layer Analysis (blocked on Peyton's RunPod run)
+- [ ] Extract residual stream activations at layers 8, 16, 24 (Peyton — RunPod)
+- [ ] Train SAEs at layers 8, 16, 24 (Peyton — RunPod, same hyperparams as layer 32)
+- [ ] Encode mean-pooled features at each layer (Peyton — `encode_features.py`)
+- [ ] Encode per-token sparse activations at each layer (Peyton — modified `encode_features.py`, sparse COO/CSR format)
+- [ ] Also re-encode layer 32 with per-token output
+- [ ] Mean-pool raw activations at each layer (no SAE) for comparison
+- [ ] Layer-wise probe comparison, experiment 7 — SAE vs raw probes at 4 layers
+- [ ] Activation pattern classification, experiment 8 — classify latents as point/motif/periodic/whole across layers
+- [ ] Token-level pathogen localization, experiment 10 — per-token pathogen scoring + BLAST hotspots (hero figure)
 
 ## Phase 5: Writeup & Presentation
 - [ ] Write hackathon submission

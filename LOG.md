@@ -2,6 +2,35 @@
 
 Reverse-chronological. Each session appends what changed, what's unfinished, what to pick up next.
 
+### 2026-04-26 (session 5 — multi-layer planning)
+- Reviewed full SAE training pipeline (`src/metageniuses/sae/model.py`, `train.py`, `config.py`, `encode_features.py`) — confirmed it supports arbitrary layers with zero code changes. Just pass `--layer N`.
+- Confirmed existing extraction only covers layers 29-32 (`last_n_layers: 4` in cloud prod config). Layers 8, 16, 24 need fresh extraction on RunPod.
+- Peyton is running the multi-layer extraction + SAE training + per-token encoding on RunPod now.
+- Wrote 3 detailed experiment plans for post-multi-layer-data work:
+  - `experiment_plans/07_layer_wise_probe_comparison.md` — SAE vs raw activation probes at layers 8, 16, 24, 32. Replicates InterProt Section 4.3 / Table 3. ~10 min local.
+  - `experiment_plans/08_activation_pattern_classification.md` — classify all 32k latents × 4 layers as point/motif/periodic/whole. Replicates InterProt Table 2. ~30 min local. Requires per-token sparse activations.
+  - `experiment_plans/10_token_level_pathogen_localization.md` — per-token pathogen scoring via probe_coef · SAE_activations, BLAST hotspot subsequences. Hero figure for paper. ~30 min local + BLAST.
+- All plans include "Instructions for Codex" sections since Peyton uses Codex, not Claude.
+- Per-token data format specified: scipy sparse CSR `.npz` + `token_metadata.jsonl` per layer, ~1.5 GB/layer, ~6 GB total for 4 layers.
+- Created `future_experiments/virus_species_classifier.md` — multi-class virus classifier from SAE features, targeting ICML (not hackathon). Requires BLASTing all 10k pathogen sequences for species labels.
+- Set Signal reminders for Mannat: (1) run middle/early layer extraction + SAE vs MetaGene linear probe, (2) save per-token activations during RunPod session.
+- Updated `experiment_plans/EXPERIMENTS.md` with Exp 7, 8, 10 descriptions and updated priority table with completion status.
+- Updated `INDEX.md` with new plan files + virus species classifier future experiment.
+- Updated `PLAN.md` with new Phase 4b (multi-layer analysis).
+- **Unfinished**: Experiments 1 and 6 scripts still need to be run (from session 4). Experiments 7, 8, 10 blocked on Peyton's RunPod data.
+- **Next up**: (1) Run Exp 1 (organism detectors) and Exp 6 (cross-delivery) — scripts exist, just need execution with proper timeouts. (2) Once Peyton delivers multi-layer data, run Exp 7, 8, 10. (3) Phase 5 writeup.
+- **Plan impact**: Added Phase 4b (multi-layer analysis) to PLAN.md with 9 new items.
+
+### 2026-04-26 (session 4)
+- Received class 2 SAE features from Bridget: `data/sae_model/features_class2.npy` (20k x 32768) + `sequence_ids_class2.json` — unblocks Experiment 6
+- Attempted to run Experiments 1 and 6 via worktree agents — both failed due to 2-min bash timeout on long-running enrichment scans (32k Fisher tests + F1 sweeps)
+- Agents wrote complete scripts before dying:
+  - `experiments/organism_detectors.py` (955 lines) — in worktree `agent-a142044a`, not yet copied to main
+  - `experiments/cross_delivery.py` (416 lines) — in worktree `agent-abf05bf8`, not yet copied to main
+- Neither script has been successfully run yet — no results produced
+- **Next up**: Copy scripts from worktrees to main, review for correctness, run with proper timeouts (10 min). Exp 1 Parts A+B are local (~3-5 min), Part C is BLAST (~15-30 min). Exp 6 probe fitting may need PCA or saga solver to avoid timeout on 32k features.
+- **Lesson learned**: Worktree agents need explicit `timeout=600000` on bash calls for compute-heavy scripts. Default 2-min timeout is insufficient for 32k-latent enrichment scans.
+
 ### 2026-04-26 (session 3 — experiment blitz)
 - Reviewed all three papers (InterProt, MetaGene-1, SURF/Bridget's PBD paper) to map analyses onto our project
 - Wrote 6 experiment plans in `experiment_plans/01-06_*.md` + master list `EXPERIMENTS.md`

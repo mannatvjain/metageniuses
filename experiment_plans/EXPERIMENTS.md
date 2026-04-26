@@ -194,15 +194,73 @@ $0. Lower priority than experiments 1-4.
 
 ---
 
+---
+
+## Experiment 7: Layer-Wise Probe Comparison (SAE vs Raw MetaGene-1)
+
+**Methodological validation.** Train linear probes on SAE features vs raw residual stream activations at layers 8, 16, 24, 32. Does the SAE preserve pathogen signal? Where does pathogen information emerge?
+
+Replicates InterProt Section 4.3 / Table 3. See `experiment_plans/07_layer_wise_probe_comparison.md`.
+
+### Dependencies
+
+- **Requires multi-layer data from Peyton**: extraction at layers 8, 16, 24 + SAE training + encoding at each layer + mean-pooled raw activations
+- Exp 2 results (layer 32 baseline)
+
+### Cost
+
+$0 once features exist. ~10 min local compute.
+
+---
+
+## Experiment 8: Activation Pattern Classification (Multi-Layer)
+
+**Free table for the paper.** Classify every latent at every layer as dead/point/short motif/medium motif/long motif/periodic/whole-sequence. Compare distribution across layers.
+
+Direct replication of InterProt Table 2 / Section 4.1. See `experiment_plans/08_activation_pattern_classification.md`.
+
+### Dependencies
+
+- **Requires per-token SAE activations from Peyton** (sparse NPZ format at each layer)
+- No labels needed — purely structural analysis
+
+### Cost
+
+$0. ~25-45 min local compute (4 layers × ~10 min each).
+
+---
+
+## Experiment 10: Token-Level Pathogen Localization
+
+**The hero figure.** For individual pathogen sequences, identify exactly which tokens drive the pathogen classification. BLAST the high-signal subsequences to identify the specific gene.
+
+Nucleotide analog of InterProt's core visualization (Figure 1). See `experiment_plans/10_token_level_pathogen_localization.md`.
+
+### Dependencies
+
+- **Requires per-token SAE activations from Peyton** (same data as Exp 8)
+- Exp 2 probe coefficients (layer 32)
+- Exp 7 probe coefficients (layers 8, 16, 24) for multi-layer version
+- Exp 1 BLAST results for organism cross-referencing
+
+### Cost
+
+$0 for scoring. ~15-30 min for BLAST on hotspot subsequences.
+
+---
+
 ## Priority order
 
-| Priority | Experiment | Time | Parallelizable? |
-|----------|-----------|------|:---:|
-| 1 | Organism-Specific Pathogen Detectors | ~1hr (BLAST rate-limiting) | Enrichment scan is fast; BLAST is async |
-| 2 | Linear Probe | ~10 min | Yes (independent) |
-| 3 | SAE Health Check | ~5 min | Yes (independent) |
-| 4 | Sequence UMAP | ~10 min | Yes (independent) |
-| 5 | Feature Clustering | ~15 min | Yes (independent) |
-| 6 | Cross-Delivery Generalization | ~30 min | Blocked on GPU |
+| Priority | Experiment | Time | Status |
+|----------|-----------|------|--------|
+| 1 | Organism-Specific Pathogen Detectors | ~1hr | Script written, needs run |
+| 2 | Linear Probe | ~10 min | **Done** (94.6% acc, 0.892 MCC) |
+| 3 | SAE Health Check | ~5 min | **Done** (803 dead, 31965 alive) |
+| 4 | Sequence UMAP | ~10 min | **Done** (clear separation, 49 clusters) |
+| 5 | Feature Clustering | ~15 min | **Done** (12 clusters, pathogen gradient) |
+| 6 | Cross-Delivery Generalization | ~30 min | Script written, needs run |
+| 7 | Layer-Wise Probe Comparison | ~10 min | Blocked on multi-layer data (Peyton) |
+| 8 | Activation Pattern Classification | ~30 min | Blocked on per-token activations (Peyton) |
+| 10 | Token-Level Pathogen Localization | ~30 min | Blocked on per-token activations (Peyton) |
 
-Experiments 1-5 are all independent and can run in parallel. Experiment 1's enrichment scan should run first since its output feeds into the BLAST step and informs interpretation of all other experiments.
+Experiments 1-5 use existing layer-32 mean-pooled data. Experiments 7, 8, 10 require the multi-layer per-token data Peyton is generating on RunPod.
