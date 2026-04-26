@@ -19,9 +19,11 @@ from sklearn.metrics import (
     classification_report,
 )
 
-DATA_DIR = Path("data/sae_model")
-LABEL_FILE = Path("data/human_virus_class1_labeled.jsonl")
-OUT_DIR = Path("results/linear_probe_pathogen")
+from _shared import REPO_ROOT, resolve_sae_dir, write_json
+
+DATA_DIR = resolve_sae_dir()
+LABEL_FILE = REPO_ROOT / "data" / "human_virus_class1_labeled.jsonl"
+OUT_DIR = REPO_ROOT / "results" / "linear_probe_pathogen"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # --- Step 1: Load and align ---
@@ -200,6 +202,39 @@ summary = {
 with open(OUT_DIR / "summary.json", "w") as f:
     json.dump(summary, f, indent=2)
 
+# Save API payload for backend/frontend
+hist_counts, hist_edges = np.histogram(coefs, bins=40)
+coef_distribution = [
+    {
+        "bin_center": float((hist_edges[i] + hist_edges[i + 1]) / 2.0),
+        "count": int(hist_counts[i]),
+    }
+    for i in range(len(hist_counts))
+]
+roc_payload = [
+    {"fpr": float(a), "tpr": float(b)}
+    for a, b in zip(fpr, tpr)
+]
+top_latents_api = []
+for item in top_latents:
+    top_latents_api.append(
+        {
+            **item,
+            "direction": "pathogen" if item["coefficient"] > 0 else "nonpathogen",
+        }
+    )
+
+write_json(
+    OUT_DIR / "api_results.json",
+    {
+        "summary": summary,
+        "roc_curve": roc_payload,
+        "coefficient_distribution": coef_distribution,
+        "top_latents": top_latents_api,
+    },
+)
+
 print(f"\nResults saved to {OUT_DIR}/")
 print(f"  summary.json, top_latents.json")
 print(f"  coefficient_distribution.png, roc_curve.png, top_latent_activations.png")
+print(f"  api_results.json")

@@ -16,20 +16,12 @@ from sklearn.decomposition import PCA
 
 import umap
 import hdbscan
+from _shared import REPO_ROOT, resolve_sae_dir, write_json
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-# Data lives in the main repo, not necessarily the worktree
-REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
-
-# Try worktree data first, fall back to main repo
-SAE_DIR = DATA_DIR / "sae_model"
-if not SAE_DIR.exists():
-    SAE_DIR = Path("/Users/mannatvjain/Developer/metageniuses/data/sae_model")
-
+SAE_DIR = resolve_sae_dir()
 LABELED_PATH = DATA_DIR / "human_virus_class1_labeled.jsonl"
-if not LABELED_PATH.exists():
-    LABELED_PATH = Path("/Users/mannatvjain/Developer/metageniuses/data/human_virus_class1_labeled.jsonl")
 
 OUT_DIR = REPO_ROOT / "results" / "feature_clustering"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -243,6 +235,59 @@ with open(OUT_DIR / "cluster_summary.csv", "w", newline="") as f:
         ])
 
 print(f"  Saved cluster_summary.csv ({len(unique_clusters)} rows, including noise=-1)")
+
+max_points = 8000
+stride = max(1, len(alive_indices) // max_points)
+sampled_idx = np.arange(0, len(alive_indices), stride)
+
+def _cluster_label(mean_or):
+    if mean_or > 2.5:
+        return "Pathogen module"
+    if mean_or < 0.4:
+        return "Non-pathogen module"
+    return "Mixed module"
+
+cluster_summary_payload = []
+for cid in unique_clusters:
+    mask = cluster_labels == cid
+    size = int(np.sum(mask))
+    mean_log2 = float(np.mean(log2_or[mask]))
+    mean_or = float(2 ** mean_log2)
+    mean_act = float(np.mean(activation_counts[mask]))
+    cluster_summary_payload.append(
+        {
+            "cluster_id": int(cid),
+            "size": size,
+            "mean_enrichment": mean_or,
+            "mean_activation_count": mean_act,
+            "label": "Noise" if cid == -1 else _cluster_label(mean_or),
+        }
+    )
+
+points = [
+    {
+        "x": float(latent_umap[i, 0]),
+        "y": float(latent_umap[i, 1]),
+        "cluster_id": int(cluster_labels[i]),
+        "latent_id": int(alive_indices[i]),
+        "enrichment": float(2 ** log2_or[i]),
+        "activation_count": int(activation_counts[i]),
+    }
+    for i in sampled_idx
+]
+
+write_json(
+    OUT_DIR / "api_results.json",
+    {
+        "points": points,
+        "cluster_summary": cluster_summary_payload,
+        "summary": {
+            "n_latents": int(n_latents),
+            "n_clusters": int(n_clusters),
+            "noise_count": int(n_noise),
+        },
+    },
+)
 
 print("\n=== DONE ===")
 print(f"Output directory: {OUT_DIR}")
