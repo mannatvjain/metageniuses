@@ -15,7 +15,8 @@ Reverse-chronological. Each session appends what changed, what's unfinished, wha
 - **Key insight**: linear probe top latents have enrichment ~1.0 (fire on everything). The enrichment analysis (Fisher's/Wilcoxon) finds different latents — ones with skewed firing frequency. Both lenses are complementary.
 - **Unfinished**: Experiment 1 (organism-specific pathogen detectors via BLAST) — the main result. All statistical infrastructure is ready; need to run enrichment scan → pull top sequences → BLAST against NCBI.
 - **Also unfinished**: Experiment 6 (cross-delivery generalization) — blocked on encoding class 2 sequences through the SAE (needs GPU)
-- **Next up**: Run Experiment 1 (organism detectors). Then write up results for hackathon submission.
+- Fleshed out Experiment 1 spec (`experiment_plans/01_organism_detectors.md`) with full implementation detail: BLAST API mechanics, batching/checkpointing, organism labeling rules, edge cases, exact output formats
+- **Next up**: Implement and run Experiment 1 (organism detectors). Then write up results for hackathon submission.
 
 ### 2026-04-25 (session 2)
 - Discussed Phase 4 approach: what analyses to run on trained SAE (feature classification, linear probing, visualization)
