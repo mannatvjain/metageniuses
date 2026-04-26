@@ -74,9 +74,9 @@
   - [x] BLAST against NCBI → 500 sequences, ~100% hit rate
   - [x] Label latents: 12 high-confidence + 15 medium-confidence organism detectors (Human astrovirus, Norovirus GI/GII, Human adenovirus, Sapovirus, etc.)
   - [x] Figures: volcano plot, organism detector bar chart, enrichment histogram
-- [ ] Cross-delivery generalization (experiment 6)
+- [x] Cross-delivery generalization (experiment 6)
   - [x] Encode class 2 sequences through SAE — received from Bridget (data/sae_model/features_class2.npy)
-  - [ ] Test probe + enrichment stability across deliveries
+  - [x] Test probe + enrichment stability across deliveries — 93.96% acc (delta -0.8%), Spearman r=0.79
 
 ## Phase 4b: Multi-Layer Analysis (blocked on Peyton's RunPod run)
 - [ ] Extract residual stream activations at layers 8, 16, 24 (Peyton — RunPod)

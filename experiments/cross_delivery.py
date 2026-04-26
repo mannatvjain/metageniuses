@@ -6,15 +6,50 @@ See experiment_plans/06_cross_delivery.md for details.
 
 import csv
 import json
+import os
+import signal
+import sys
+import threading
 import time
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 from scipy.stats import fisher_exact, pearsonr, spearmanr
+
+# ---------- Memory monitor ----------
+RAM_LIMIT_GB = 125
+RAM_WARN_GB = 100
+
+def _get_rss_gb():
+    """Get current process RSS in GB (macOS/Linux)."""
+    import resource
+    # maxrss on macOS is in bytes
+    rss_bytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return rss_bytes / (1024 ** 3)
+    return rss_bytes / (1024 ** 2)  # Linux: in KB
+
+def _monitor_memory(interval=10):
+    """Background thread that checks RSS every `interval` seconds."""
+    warned = False
+    while not _monitor_stop.is_set():
+        rss = _get_rss_gb()
+        if rss >= RAM_LIMIT_GB:
+            print(f"\n*** MEMORY LIMIT EXCEEDED: {rss:.1f} GB >= {RAM_LIMIT_GB} GB. ABORTING. ***", flush=True)
+            os.kill(os.getpid(), signal.SIGTERM)
+            return
+        elif rss >= RAM_WARN_GB and not warned:
+            print(f"\n*** WARNING: memory at {rss:.1f} GB (limit: {RAM_LIMIT_GB} GB) ***", flush=True)
+            warned = True
+        elif rss < RAM_WARN_GB:
+            warned = False
+        _monitor_stop.wait(interval)
+
+_monitor_stop = threading.Event()
+_monitor_thread = threading.Thread(target=_monitor_memory, daemon=True)
+_monitor_thread.start()
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.metrics import (
     accuracy_score,
@@ -49,42 +84,33 @@ def load_features_and_labels(feature_path, ids_path, label_path):
     return features, labels, sequence_ids
 
 
-def _fisher_one(table_row):
-    """Run fisher_exact on a single 2x2 table packed as (a, b, c, d)."""
-    a, b, c, d = table_row
-    odds_ratio, p = fisher_exact([[a, b], [c, d]])
-    return odds_ratio, p
-
-
-def compute_enrichment_vectorized(features, labels):
-    """Compute Fisher's exact test OR for each latent, vectorized contingency + parallel Fisher."""
+def compute_enrichment(features, labels):
+    """Compute Fisher's exact test OR for each latent."""
     active = (features > 0).astype(np.int64)
     pathogen = (labels == 1).astype(np.int64)
     nonpathogen = (labels == 0).astype(np.int64)
 
-    # Vectorized contingency table computation for all latents at once
-    a = active.T @ pathogen       # active & pathogen per latent
-    b = active.T @ nonpathogen    # active & non-pathogen per latent
-    c = pathogen.sum() - a        # inactive & pathogen
-    d = nonpathogen.sum() - b     # inactive & non-pathogen
+    # Vectorized contingency table computation
+    a = active.T @ pathogen
+    b = active.T @ nonpathogen
+    c = pathogen.sum() - a
+    d = nonpathogen.sum() - b
 
-    tables = list(zip(a, b, c, d))
-
-    n_latents = len(tables)
+    n_latents = features.shape[1]
     ors = np.zeros(n_latents)
     pvals = np.zeros(n_latents)
 
-    # Process in chunks with multiprocessing (cap workers to limit memory)
-    chunk_size = 2000
-    with ProcessPoolExecutor(max_workers=2) as executor:
-        for start in range(0, n_latents, chunk_size):
-            end = min(start + chunk_size, n_latents)
-            results = list(executor.map(_fisher_one, tables[start:end]))
-            for j, (o, p) in enumerate(results):
-                ors[start + j] = o
-                pvals[start + j] = p
-            print(f"  Computed {end}/{n_latents} latents...")
+    start = time.time()
+    for i in range(n_latents):
+        if i % 5000 == 0:
+            elapsed = time.time() - start
+            print(f"  {i}/{n_latents} ({elapsed:.0f}s)")
+        try:
+            ors[i], pvals[i] = fisher_exact([[a[i], b[i]], [c[i], d[i]]])
+        except Exception:
+            ors[i], pvals[i] = 1.0, 1.0
 
+    print(f"  Done: {n_latents} latents in {time.time() - start:.0f}s")
     return ors, pvals
 
 
@@ -219,12 +245,12 @@ n_latents = X_c1.shape[1]
 
 print("\nComputing enrichment for class 1...")
 t0 = time.time()
-or_c1, pval_c1 = compute_enrichment_vectorized(X_c1, y_c1)
+or_c1, pval_c1 = compute_enrichment(X_c1, y_c1)
 print(f"  Class 1 enrichment took {time.time() - t0:.1f}s")
 
 print("\nComputing enrichment for class 2...")
 t0 = time.time()
-or_c2, pval_c2 = compute_enrichment_vectorized(X_c2, y_c2)
+or_c2, pval_c2 = compute_enrichment(X_c2, y_c2)
 print(f"  Class 2 enrichment took {time.time() - t0:.1f}s")
 
 # Log2 transform ORs (handle zeros/inf)

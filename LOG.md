@@ -11,9 +11,11 @@ Reverse-chronological. Each session appends what changed, what's unfinished, wha
   - Part E: volcano plot, organism detector bar chart, enrichment histogram
   - Bugs fixed during run: NCBI returns ZIP not raw JSON for JSON2 format; BlastOutput2 can be dict or list; IncompleteRead not caught by retry logic; inf ORs break matplotlib histogram
   - Script: `experiments/organism_detectors.py` (1049 lines, CLI with `--parts` and `--blast-test` flags, checkpoint/resume)
-- Experiment 6 (cross-delivery) — in progress, running in background
-  - Received class 2 SAE features from Bridget
-  - Fixed: n_jobs=1 for LogisticRegressionCV (disk space), max_workers=2 for ProcessPoolExecutor (memory)
+- **Experiment 6 (cross-delivery) — COMPLETE**
+  - Probe: 93.96% acc on class 2 (vs 94.76% train), -0.8% delta. AUROC 0.984. Features generalize.
+  - Feature stability: Spearman r=0.79 (all latents), 0.87 (significant only). 10,510 latents significant in both classes.
+  - Outputs: summary.json, comparison_table.md, enrichment_scatter.png, roc_curve_class2.png, feature_stability.csv
+  - Bugs fixed: ProcessPoolExecutor spawn error (no `__main__` guard) → replaced with simple loop; n_jobs=1 for sklearn (disk); added RAM monitor thread (warn 100GB, kill 125GB)
 - Deleted redundant zips: `sae_final.pt.zip` (941M) and `features.npy.zip` (104M) — freed ~1GB
 - Cleaned up 5 stale worktrees (~900MB)
 - **Lesson learned**: Don't print verbose output to terminal for long-running jobs — redirect to log files. Ghostty buffers all scrollback in RAM.
