@@ -1,7 +1,7 @@
 import useApi from "../hooks/useApi";
 import { Loading, ErrorState } from "../components/LoadingState";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceLine,
 } from "recharts";
 
@@ -47,14 +47,16 @@ export default function Experiment2() {
             ROC Curve
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={roc_curve}>
+            <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="fpr" tick={{ fontSize: 11 }} label={{ value: "False Positive Rate", position: "bottom", offset: 10, style: { fontSize: 12 } }} />
-              <YAxis dataKey="tpr" tick={{ fontSize: 11 }} label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
+              <XAxis type="number" dataKey="fpr" domain={[0, 1]} tick={{ fontSize: 11 }}
+                label={{ value: "False Positive Rate", position: "bottom", offset: 15, style: { fontSize: 12 } }} />
+              <YAxis type="number" dataKey="tpr" domain={[0, 1]} tick={{ fontSize: 11 }}
+                label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
               <Tooltip formatter={(v) => v.toFixed(3)} />
-              <Line type="monotone" dataKey="tpr" stroke="#0d8ba1" strokeWidth={2} dot={false} />
-              <Line data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} type="linear" dataKey="tpr" stroke="#d4d4d4" strokeWidth={1} strokeDasharray="5 5" dot={false} />
-            </LineChart>
+              <Scatter data={roc_curve} line={{ stroke: "#0d8ba1", strokeWidth: 2 }} fill="none" legendType="none" />
+              <Scatter data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} line={{ stroke: "#d4d4d4", strokeWidth: 1, strokeDasharray: "5 5" }} fill="none" legendType="none" />
+            </ScatterChart>
           </ResponsiveContainer>
           <p className="text-xs text-center text-[#828282] mt-1">AUROC = {summary.auroc.toFixed(3)}</p>
         </div>
