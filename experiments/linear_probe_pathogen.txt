@@ -1,0 +1,36 @@
+Experiment 2: Linear probe for pathogen detection
+
+Purpose
+This experiment tests whether pathogen status is linearly recoverable from sequence-level SAE features. If a simple logistic regression performs well, then the SAE representation contains accessible pathogen/non-pathogen information.
+
+Inputs
+- features.npy: a sequence-by-latent SAE activation matrix, expected to be 20,000 sequences by 32,768 latents.
+- sequence_ids.json: row order for features.npy.
+- data/human_virus_class1_labeled.jsonl: labels for each sequence, where source=1 means pathogen and source=0 means non-pathogen.
+
+What it does
+1. Loads SAE feature activations and aligns each feature row to its pathogen label using sequence_ids.json.
+2. Splits the data into stratified train and test sets with an 80/20 split.
+3. Trains an L2-regularized logistic regression with cross-validation over regularization strength.
+4. Evaluates test accuracy, Matthews correlation coefficient, AUROC, and the classification report.
+5. Reads the learned coefficient for each SAE latent.
+6. Ranks the most positive coefficients as pathogen-associated and the most negative coefficients as non-pathogen-associated.
+7. For the top 10 latents in each direction, computes:
+   - activation frequency in pathogen sequences
+   - activation frequency in non-pathogen sequences
+   - mean activation in pathogen sequences
+   - mean activation in non-pathogen sequences
+   - enrichment based on activation frequency
+8. Generates plots for coefficient distribution, ROC performance, and mean activation of the top latents by class.
+
+Outputs
+- results/linear_probe_pathogen/summary.json: accuracy, MCC, AUROC, best regularization value, train/test counts, and feature count.
+- results/linear_probe_pathogen/top_latents.json: top pathogen-associated and non-pathogen-associated latents with coefficients and per-class activation stats.
+- results/linear_probe_pathogen/coefficient_distribution.png: histogram of all latent coefficients.
+- results/linear_probe_pathogen/roc_curve.png: ROC curve for pathogen classification.
+- results/linear_probe_pathogen/top_latent_activations.png: grouped bar chart of mean activation for the top latents by class.
+- results/linear_probe_pathogen/api_results.json: frontend/backend payload containing summary, ROC points, coefficient histogram bins, and top latent rows.
+
+How to interpret it
+High accuracy, MCC, and AUROC mean pathogen status is strongly encoded in the SAE feature space. Positive coefficients push the probe toward the pathogen class; negative coefficients push it toward the non-pathogen class. Activation frequency measures how often a latent fires. Mean activation measures activation magnitude, averaged over all sequences in a class, including zeros.
+

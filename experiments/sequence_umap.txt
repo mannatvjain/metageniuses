@@ -1,0 +1,31 @@
+Experiment 4: Sequence UMAP
+
+Purpose
+This experiment visualizes whether whole sequences separate by pathogen label in SAE feature space. Each point in the final plot is one sequence.
+
+Inputs
+- features.npy: sequence-by-latent SAE activation matrix.
+- sequence_ids.json: row order for features.npy.
+- data/human_virus_class1_labeled.jsonl: pathogen/non-pathogen labels.
+
+What it does
+1. Loads sequence-level SAE features and sequence IDs.
+2. Loads pathogen labels and aligns them to the feature rows.
+3. Reduces the 32,768-dimensional SAE vectors to 50 dimensions with PCA. This makes UMAP faster and records how much variance the top principal components explain.
+4. Runs UMAP on the 50-dimensional PCA representation to produce two coordinates per sequence.
+5. Plots the 2D embedding with non-pathogen sequences in blue and pathogen sequences in red.
+6. Saves the UMAP coordinates and labels to CSV.
+7. Runs HDBSCAN on the 2D UMAP embedding to find subclusters.
+8. Prints and saves each cluster assignment, including how many pathogen and non-pathogen sequences are in each cluster.
+9. Writes a sampled API payload for frontend use.
+
+Outputs
+- results/sequence_umap/pca_variance.png: explained variance for the PCA components.
+- results/sequence_umap/umap_pathogen.png: 2D UMAP scatter plot colored by pathogen label.
+- results/sequence_umap/umap_coords.csv: sequence_id, umap_x, umap_y, and source label.
+- results/sequence_umap/subclusters.csv: HDBSCAN cluster ID for each sequence.
+- results/sequence_umap/api_results.json: sampled UMAP points, PCA variance data, and summary counts.
+
+How to interpret it
+Nearby points have similar SAE activation profiles. Separation between red and blue regions means pathogen status is reflected in the global SAE representation. UMAP axes do not have intrinsic biological meaning: umap_x and umap_y are plotting coordinates, not measured biological quantities. HDBSCAN clusters can suggest substructure, but they need biological follow-up before being interpreted as organism or function groups.
+

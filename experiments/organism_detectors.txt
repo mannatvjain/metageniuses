@@ -1,0 +1,30 @@
+Experiment 1: Pathogen detector candidates
+
+Purpose
+This experiment identifies SAE latents that look like candidate pathogen detectors. It is a pre-BLAST analysis: it uses existing differential activation and k-mer enrichment outputs to rank features and attach provisional motif evidence, but it does not claim organism-level validation yet.
+
+Inputs
+- Analysis output directory resolved by METAGENIUSES_ANALYSIS_DIR or the default fallback.
+- differential_feature_signature.csv: per-feature class statistics, including activation rates, mean activations, FDR values, and log odds ratios.
+- kmer_enrichment.csv: enriched k-mers for each SAE feature.
+- top_feature_examples.csv: example sequences that strongly activate each feature.
+
+What it does
+1. Loads differential feature statistics, k-mer enrichment results, and top activating examples.
+2. Assumes 10,000 pathogen and 10,000 non-pathogen sequences, then estimates a best possible F1 score for each latent from its active/inactive counts.
+3. Marks each latent as pathogen-associated, non-pathogen-associated, or not significant using FDR <= 0.05 and the sign of the pathogen/non-pathogen mean activation difference.
+4. Computes log2 fold change, negative log10 FDR, and odds ratio style enrichment values.
+5. Selects the top 15 pathogen-associated latents with class_enrichment >= 1.5, ranked by F1, enrichment, and mean activation difference.
+6. Adds provisional labels using the top enriched k-mers for each selected latent.
+7. Adds up to three top activating example sequences per selected latent, but labels their organism fields as unresolved because BLAST has not been run.
+
+Outputs
+- results/organism_detectors/volcano_plot.png: all latents plotted by pathogen/non-pathogen log2 fold change and FDR significance.
+- results/organism_detectors/enrichment_histogram.png: distribution of pathogen enrichment across latents.
+- results/organism_detectors/top_organism_detectors.png: bar chart of the top candidate detector latents.
+- results/organism_detectors/top_detectors.csv: table of the top detector candidates and provisional motif evidence.
+- results/organism_detectors/api_results.json: frontend/backend payload containing summary statistics, volcano points, top detectors, and enrichment histogram bins.
+
+How to interpret it
+A latent near the pathogen side of the volcano plot with strong FDR support and high enrichment is a candidate pathogen-associated feature. The k-mer labels are only provisional. A feature should not be described as detecting a specific organism or gene until the top activating sequences are validated with BLAST or a comparable annotation workflow.
+

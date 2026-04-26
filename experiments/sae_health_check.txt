@@ -1,0 +1,37 @@
+Experiment 3: SAE health check
+
+Purpose
+This experiment checks whether the trained sparse autoencoder behaves sensibly before interpreting individual latents. It measures dead features, sparsity, activation breadth, and activation strength.
+
+Inputs
+- features.npy: sequence-level SAE activation matrix.
+- sae_config.json: SAE configuration, including TopK k, model dimension, and expansion factor.
+
+What it does
+1. Loads the SAE activation matrix and config.
+2. Treats each column as one SAE latent and each row as one sequence.
+3. Marks an activation as present when its value is greater than zero.
+4. Computes per-latent statistics:
+   - max_activation: largest value observed for that latent
+   - is_dead: whether max_activation is zero
+   - activation_count: how many sequences activate the latent
+   - activation_fraction: fraction of sequences activating the latent
+   - mean_activation_when_active: average nonzero activation magnitude for that latent
+5. Computes per-sequence statistics:
+   - active_features: number of active latents for each sequence
+   - total_activation_mass: sum of latent activations for each sequence
+6. Computes global stats such as dead count, alive count, dead percentage, total nonzero entries, and overall sparsity.
+7. Generates plots showing activation breadth and strength.
+
+Outputs
+- results/sae_health_check/stats.json: global health-check statistics.
+- results/sae_health_check/latent_stats.csv: one row per latent with dead/alive status and activation statistics.
+- results/sae_health_check/sequences_per_latent.png: histogram of how many sequences activate each latent.
+- results/sae_health_check/max_activation_distribution.png: distribution of maximum activation values for alive latents.
+- results/sae_health_check/active_features_per_sequence.png: histogram of active features per sequence, with the configured TopK value marked.
+- results/sae_health_check/activation_fraction_vs_max.png: scatter plot comparing feature breadth and strength.
+- results/sae_health_check/api_results.json: frontend/backend payload with summary values, histogram bins, and comparison metadata.
+
+How to interpret it
+A healthy TopK SAE should have relatively few dead latents and a number of active features per sequence near the configured k value. Activation count and activation fraction measure frequency or breadth. Max activation and mean_activation_when_active measure magnitude or strength.
+

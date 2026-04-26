@@ -1,0 +1,29 @@
+Probe visualization helper
+
+Purpose
+This script adds extra plots for the linear probe experiment. It is not a separate model experiment; it reuses the linear probe outputs and the SAE features to make more detailed figures about activation distributions and coefficient concentration.
+
+Inputs
+- results/linear_probe_pathogen/top_latents.json: top latent list from the linear probe.
+- results/linear_probe_pathogen/summary.json: probe performance summary.
+- data/sae_model/features.npy: sequence-level SAE activation matrix.
+- data/sae_model/sequence_ids.json: row order for the feature matrix.
+- data/human_virus_class1_labeled.jsonl: pathogen/non-pathogen labels.
+
+What it does
+1. Loads the top pathogen-associated and non-pathogen-associated latents from the linear probe results.
+2. Loads the feature matrix and labels.
+3. For the top five latents in each direction, plots pathogen and non-pathogen activation distributions on the same axes.
+4. Marks the class mean activation with dashed vertical lines.
+5. Retrains the logistic regression probe to recover the full coefficient vector.
+6. Sorts latents by absolute coefficient magnitude.
+7. Computes the cumulative fraction of total absolute coefficient mass captured by the top-ranked latents.
+8. Reports how many latents account for 50 percent and 90 percent of the total coefficient mass.
+
+Outputs
+- results/linear_probe_pathogen/activation_distributions.png: activation histograms for the top five pathogen and top five non-pathogen latents.
+- results/linear_probe_pathogen/cumulative_importance.png: cumulative coefficient importance curve and top-100 coefficient bar plot.
+
+How to interpret it
+The activation distribution plot shows whether a top latent separates classes by stronger activation values, different activation frequency, or both. The cumulative importance plot shows whether pathogen signal is concentrated in a small number of latents or distributed across many features. Because the script retrains the probe, exact coefficients should be expected to match the original setup only if the data and solver behavior are unchanged.
+

@@ -1,0 +1,35 @@
+Experiment 5: Feature clustering
+
+Purpose
+This experiment clusters SAE latents by their co-activation patterns across sequences. Instead of asking whether sequences cluster, it asks whether features cluster into modules that fire on similar sets of sequences.
+
+Inputs
+- features.npy: sequence-by-latent SAE activation matrix.
+- sequence_ids.json: row order for features.npy.
+- data/human_virus_class1_labeled.jsonl: pathogen/non-pathogen labels.
+
+What it does
+1. Loads the sequence-level SAE activation matrix.
+2. Loads pathogen labels and aligns them to sequence IDs.
+3. Transposes the matrix so each SAE latent becomes one point represented by its activations across all sequences.
+4. Removes dead latents whose maximum activation is zero.
+5. Reduces alive latent vectors to 50 dimensions with PCA.
+6. Runs UMAP with cosine distance to embed latents into two dimensions. Cosine distance emphasizes activation pattern similarity rather than raw magnitude.
+7. Runs HDBSCAN on the 2D latent UMAP to assign cluster IDs.
+8. Computes pathogen enrichment for each alive latent using Fisher's exact test on a 2x2 active/inactive by pathogen/non-pathogen table.
+9. Counts how many sequences activate each latent.
+10. Saves UMAP plots colored by cluster, pathogen enrichment, and activation count.
+11. Saves per-latent cluster assignments and per-cluster summary statistics.
+12. Writes a sampled API payload for frontend display.
+
+Outputs
+- results/feature_clustering/latent_umap.png: latent UMAP colored by HDBSCAN cluster.
+- results/feature_clustering/latent_umap_enrichment.png: latent UMAP colored by pathogen enrichment.
+- results/feature_clustering/latent_umap_activation_count.png: latent UMAP colored by activation count.
+- results/feature_clustering/cluster_assignments.csv: one row per alive latent with cluster ID, enrichment, activation count, and UMAP coordinates.
+- results/feature_clustering/cluster_summary.csv: one row per cluster with size, mean enrichment, and mean activation count.
+- results/feature_clustering/api_results.json: sampled latent points, cluster summary, and global cluster counts.
+
+How to interpret it
+Clusters indicate groups of latents that tend to activate on similar sequences. A cluster with high average pathogen enrichment may be a pathogen-associated feature module. A cluster with high activation count contains broad features that fire on many sequences; low activation count suggests rarer or more specific features. These are representation-level clusters and still need biological annotation.
+
