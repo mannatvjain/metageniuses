@@ -17,13 +17,10 @@ from sklearn.decomposition import PCA
 
 import umap
 import hdbscan
+from _shared import REPO_ROOT, resolve_sae_dir, write_json
 
 # ── Paths ──────────────────────────────────────────────────────────────
-REPO_ROOT = Path(__file__).resolve().parent.parent
-# features.npy and sequence_ids.json live in the main repo (not worktree)
-MAIN_REPO = Path("/Users/mannatvjain/Developer/metageniuses")
-SAE_DIR = MAIN_REPO / "data" / "sae_model"
-
+SAE_DIR = resolve_sae_dir()
 FEATURES_PATH = SAE_DIR / "features.npy"
 SEQ_IDS_PATH = SAE_DIR / "sequence_ids.json"
 LABELED_JSONL = REPO_ROOT / "data" / "human_virus_class1_labeled.jsonl"
@@ -153,6 +150,41 @@ def main():
         n_path = (sources[mask] == 1).sum()
         label = "noise" if cid == -1 else f"cluster {cid}"
         print(f"    {label}: {n_total} sequences ({n_path} pathogen, {n_total - n_path} non-pathogen)")
+
+    # 7. API payload for frontend
+    max_points = 8000
+    stride = max(1, len(seq_ids) // max_points)
+    sampled_idx = np.arange(0, len(seq_ids), stride)
+    points = [
+        {
+            "x": float(embedding[i, 0]),
+            "y": float(embedding[i, 1]),
+            "label": int(sources[i]),
+            "sequence_id": seq_ids[i],
+        }
+        for i in sampled_idx
+    ]
+    pca_variance = [
+        {
+            "component": int(i + 1),
+            "explained_variance": float(pca.explained_variance_ratio_[i]),
+        }
+        for i in range(len(pca.explained_variance_ratio_))
+    ]
+    write_json(
+        OUT_DIR / "api_results.json",
+        {
+            "points": points,
+            "pca_variance": pca_variance,
+            "summary": {
+                "n_sequences": int(len(seq_ids)),
+                "n_pathogen": int(n_pathogen),
+                "n_nonpathogen": int(n_nonpathogen),
+                "pca_dims": 50,
+                "variance_explained_50": float(cumulative_var[-1]),
+            },
+        },
+    )
 
     print("\nDone.")
 

@@ -20,26 +20,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from _shared import REPO_ROOT, resolve_sae_dir, write_json
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-REPO_ROOT = Path(__file__).resolve().parent.parent
-# features.npy lives in the main repo's data dir (not necessarily the worktree)
-# Try worktree first, then fall back to main repo
-DATA_DIR_CANDIDATES = [
-    REPO_ROOT / "data" / "sae_model",
-    Path("/Users/mannatvjain/Developer/metageniuses/data/sae_model"),
-]
-DATA_DIR = None
-for candidate in DATA_DIR_CANDIDATES:
-    if (candidate / "features.npy").exists():
-        DATA_DIR = candidate
-        break
-
-if DATA_DIR is None:
-    print("ERROR: Could not find features.npy in any expected location.")
-    sys.exit(1)
+DATA_DIR = resolve_sae_dir()
 
 FEATURES_PATH = DATA_DIR / "features.npy"
 CONFIG_PATH = DATA_DIR / "sae_config.json"
@@ -60,6 +46,8 @@ print(f"  {n_sequences} sequences, {n_latents} latents")
 with open(CONFIG_PATH) as f:
     config = json.load(f)
 k = config.get("k", 64)
+d_model = config.get("d_model", 4096)
+expansion = config.get("expansion_factor", 8)
 print(f"  TopK k = {k}")
 
 # ---------------------------------------------------------------------------
@@ -263,5 +251,64 @@ with open(csv_path, "w", newline="") as f:
             float(activation_fraction[i]),
         ])
 print(f"  Saved {csv_path}")
+
+# api_results.json for backend/frontend
+seq_counts, seq_edges = np.histogram(activation_count, bins=20)
+max_counts, max_edges = np.histogram(max_activation[~is_dead], bins=25)
+active_counts, active_edges = np.histogram(active_features, bins=20)
+
+payload = {
+    "summary": {
+        "total_latents": int(n_latents),
+        "dead_count": dead_count,
+        "alive_count": alive_count,
+        "dead_pct": round(dead_percentage, 2),
+        "sparsity_pct": round(overall_sparsity * 100, 4),
+        "mean_active_per_seq": round(float(active_features.mean()), 2),
+        "median_active_per_seq": int(np.median(active_features)),
+        "mean_activation_count": round(float(activation_count.mean()), 2),
+        "median_activation_count": round(float(np.median(activation_count)), 2),
+    },
+    "sequences_per_latent": [
+        {
+            "bin_start": float(seq_edges[i]),
+            "bin_end": float(seq_edges[i + 1]),
+            "count": int(seq_counts[i]),
+        }
+        for i in range(len(seq_counts))
+    ],
+    "max_activation_dist": [
+        {
+            "bin_start": float(max_edges[i]),
+            "bin_end": float(max_edges[i + 1]),
+            "count": int(max_counts[i]),
+        }
+        for i in range(len(max_counts))
+    ],
+    "active_features_per_seq": [
+        {
+            "bin_center": float((active_edges[i] + active_edges[i + 1]) / 2.0),
+            "count": int(active_counts[i]),
+        }
+        for i in range(len(active_counts))
+    ],
+    "comparison": {
+        "interprot": {
+            "d_model": 1280,
+            "expansion": "2-4x",
+            "k": 64,
+            "total_latents": "4096-8192",
+            "dead_pct": "varies",
+        },
+        "ours": {
+            "d_model": d_model,
+            "expansion": f"{expansion}x",
+            "k": k,
+            "total_latents": int(n_latents),
+            "dead_pct": round(dead_percentage, 2),
+        },
+    },
+}
+write_json(OUTPUT_DIR / "api_results.json", payload)
 
 print("\nDone.")
