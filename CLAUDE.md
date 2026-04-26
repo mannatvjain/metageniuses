@@ -1,35 +1,61 @@
 # Metageniuses
 
-Project for Apart Research's AI x Bio Hackathon.
+Project for Apart Research's AI x Bio Hackathon. Interpretable pandemic surveillance via Sparse Autoencoders on MetaGene-1.
 
 ## Stack
-- **Language**:
-- **Key dependencies**:
+- **Language**: Python 3.10+
+- **Key dependencies**: torch, transformers, scikit-learn, scipy, statsmodels, numpy, pandas, matplotlib, umap-learn, hdbscan
+- **Frontend**: React 19 + Vite 7 + Tailwind 4 (in `viz/`)
+- **Backend**: FastAPI (in `backend/`)
 
 ## Architecture
 
-[ASCII diagram or short prose describing the system. Fill this in once the project shape is clear.]
+```
+MetaGene-1 (7B transformer, layer 32)
+        ↓ residual stream activations
+    SAE (TopK, 32768 latents, k=64)
+        ↓ sparse feature vectors
+    Experiments (enrichment, probes, UMAP, BLAST)
+        ↓
+    Results → Backend API → Frontend visualizer
+```
 
 ## Experiment organization
 - `experiment_plans/` — plans for experiments we can run now with existing data
 - `future_experiments/` — experiments that require GPU re-runs or new SAE inference (e.g., token-level activations, additional layer SAEs). Put any idea that needs RunPod / SAE encoder / new model inference here, not in `experiment_plans/`.
+- `experiments/` — Python scripts that implement the experiment plans
+- `results/` — output from experiments (gitignored — large CSVs, PNGs)
 
 ## Conventions
 - **No self-attribution**: Claude is a tool, not a person. Never add Co-Authored-By lines or credit Claude as a co-author in commits or anywhere else.
 - **Owner tracking**: This is a multi-person project. Every commit must include the name of the human who instructed the Claude agent (e.g., `Instructed by: Mannat Jain` in the commit message). Ask if unclear.
+- **Don't touch Peyton's code**: `src/metageniuses/sae/analyze.py`, `tests/sae/test_analyze.py`, and `pyproject.toml` are maintained separately. Don't edit them unless coordinating with Peyton.
 
 ## Dev commands
 ```bash
-# [Fill in as commands are established.]
-```
+# Run an experiment
+python experiments/linear_probe_pathogen.py
+python experiments/sae_health_check.py
+python experiments/sequence_umap.py
+python experiments/feature_clustering.py
 
-## Setup
-This repo was cloned from `~/Developer/agent-scaffold`. After cloning, initialize it as a git repo:
-```bash
-cd ~/Developer/metageniuses
-git init
-git add -A
-git commit -m "Initial scaffold from agent-scaffold template"
+# Run Peyton's analysis pipeline
+metageniuses-analyze-sae --dataset_jsonl data/human_virus_class1_labeled.jsonl \
+  --activation_path data/sae_model --output_dir results/analyze \
+  --label_field source --positive_label 1
+
+# Run extraction (needs GPU)
+PYTHONPATH=src python3 -m metageniuses.extraction.cli --config configs/extraction/tiny-test.json --adapter fake
+
+# Run tests
+PYTHONPATH=src python3 -m unittest discover -s tests/extraction -p 'test_*.py'
+python -m pytest tests/sae/
+
+# Frontend
+cd viz && npm install && npm run dev
+
+# Backend
+cd backend && pip install -r requirements.txt && uvicorn app:app --reload
 ```
 
 ---
@@ -89,79 +115,3 @@ When the user runs `/close` or the conversation is ending, complete this checkli
 3. Append a dated entry to `LOG.md`: what changed, what's unfinished, what the next session should pick up.
 4. Update `INDEX.md` if any files were added or removed.
 5. If anything is half-finished, note it clearly in `LOG.md` so the next agent doesn't have to guess.
-
----
-
-## File Guide
-
-**This section describes what each file in the scaffold is for. After the initial setup session has populated the files below, delete this entire "File Guide" section** — it exists only to bootstrap the first session's understanding.
-
-### INDEX.md
-A flat map of every file in the repo with a one-line purpose. Two sections: **Documentation** and **Code** (add **Config** if needed). Use a markdown table:
-
-```markdown
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Project instructions, architecture, agent protocol |
-| `INDEX.md` | This file — map of the repository |
-```
-
-Keep it updated. An agent should be able to read `INDEX.md` alone and know where everything is. No prose — just the table.
-
-### PLAN.md
-A checklist tracking every task in the project. Use `- [x]` for done, `- [ ]` for pending. Group by milestone or phase. Indent subtasks. Example:
-
-```markdown
-# Plan
-
-## Phase 1: Foundation
-- [x] Set up project structure
-- [ ] Implement core data model
-  - [x] Define schemas
-  - [ ] Write migrations
-- [ ] Build API layer
-```
-
-This is the single source of truth for "what needs to happen" and "what's already done." Every session should update it. Don't let it go stale.
-
-### LOG.md
-A reverse-chronological session journal. Each entry is dated and written by the agent at the end of a conversation. Format:
-
-```markdown
-### YYYY-MM-DD
-- What was accomplished (bullet points, concise)
-- What's unfinished and why
-- What the next session should start with
-- Any gotchas or decisions made that aren't obvious from the code
-```
-
-Newest entries at the top (after the header). This is how sessions hand off to each other. Be specific — "worked on the API" is useless; "added GET /messages endpoint, POST /messages still needs auth middleware" is useful.
-
-### CONTEXT.md (created by first session)
-Describes the problem domain and any external systems the project interacts with. This is everything an agent needs to understand *why* the code exists and *what* it connects to, without reading external repos or docs. Include:
-
-- What problem this project solves
-- External systems it talks to (APIs, databases, services) with enough detail to write code against them
-- Data flows: what comes in, what goes out, what gets stored
-- Domain vocabulary: terms that have specific meanings in this project
-- Constraints: performance requirements, security boundaries, platform limitations
-
-This file should be written once and updated rarely. If a section grows large enough to need its own file, split it into a `*_REFERENCE.md` and link from here.
-
-### *_REFERENCE.md (created as needed)
-Platform-specific or API-specific knowledge that agents discover through trial and error. Named after the domain: `FOUNDRY_REFERENCE.md`, `SIGNAL_CLI_REFERENCE.md`, `REACT_REFERENCE.md`, etc.
-
-Each reference doc should contain:
-- **Working patterns**: code snippets that actually work, with context
-- **Gotchas**: things that don't work the way you'd expect, with the correct approach
-- **API surface**: endpoints, parameters, return types — whatever the agent needs to avoid guessing
-
-Format gotchas as:
-```markdown
-### Gotcha: [short description]
-**Wrong**: [what you'd naively try]
-**Right**: [what actually works]
-**Why**: [one-line explanation]
-```
-
-These files grow over time. Every session that learns something new about the platform should append to the relevant reference doc. If you're about to search the web for how an API works, check the reference doc first — a previous session may have already figured it out.

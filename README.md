@@ -1,79 +1,82 @@
-# metageniuses
+# Metageniuses
 
-Hackathon project for interpretable metagenomic modeling:
+**Interpretable pandemic surveillance via Sparse Autoencoders on MetaGene-1.**
 
-1. Curated sequence inputs
-2. MetaGene-style forward pass
-3. Hidden-state extraction for SAE training
-4. Downstream analysis and visualization (later phases)
+Apart Research AI x Bio Hackathon project. We train a Sparse Autoencoder on the residual stream of MetaGene-1 (a 7B metagenomic foundation model) to extract interpretable features that reveal what the model has learned about pathogens.
 
-Current repo focus is step 2-3: robust extraction + storage contracts.
+## Key Results
 
-## Current Project Structure
+- **Linear probe**: 94.6% accuracy (0.892 MCC) predicting pathogen vs non-pathogen from SAE features alone
+- **SAE health**: 31,965 alive features out of 32,768 (2.4% dead), well-trained
+- **Sequence UMAP**: clear pathogen/non-pathogen separation with 49 sub-clusters
+- **Feature clustering**: pathogen-enriched latents cluster spatially together
+- **Organism detectors** (in progress): BLAST-based labeling of pathogen-specific latents
 
-```text
-metageniuses/
-├── src/metageniuses/extraction/      # extraction pipeline, adapters, storage, contracts, CLI
-├── configs/extraction/               # run configs (test, local smoke, cloud production)
-├── data/raw_sources/                 # uploaded source CSV datasets
-├── data/curated_sequences/           # forward-pass-ready JSONL inputs + summary
-├── data/test-activations/            # local/test extraction outputs
-├── results/                          # cloud/production extraction outputs
-├── docs/architecture/                # extraction architecture docs
-├── docs/datasets/                    # dataset curation docs
-├── tests/extraction/                 # extraction unit/contract tests
-└── tests/fixtures/                   # tiny local test data
+## Project Structure
+
 ```
-
-## Key Files
-
-- `configs/extraction/default.json`: baseline config (writes to `results/extraction/`)
-- `configs/extraction/tiny-test.json`: local no-download test config
-- `configs/extraction/metagene-smoke-local.json`: real-weights local smoke run (writes to `data/test-activations/`)
-- `configs/extraction/metagene-cloud-prod.json`: cloud production run preference (`4 layers`, `20,000 sequences`, fresh run directory under `results/cloud-extraction/` each launch)
-- `data/curated_sequences/forward_pass_unique_sequences.jsonl`: deduplicated default forward-pass input
-- `data/curated_sequences/forward_pass_summary.json`: row counts, dedupe counts, filtering stats
-- `docs/architecture/residual_extraction.md`: extraction component contract and design
-- `docs/architecture/runpod_setup.md`: RunPod deployment/run instructions
-- `docs/datasets/forward_pass_dataset.md`: how raw uploads were organized and curated
+metageniuses/
+├── src/metageniuses/
+│   ├── extraction/          # MetaGene-1 residual stream extraction pipeline
+│   └── sae/                 # SAE model, training, encoding, analysis
+├── experiments/             # Experiment scripts (linear probe, UMAP, clustering, etc.)
+├── experiment_plans/        # Detailed specs for each experiment
+├── future_experiments/      # Ideas that need GPU re-runs
+├── results/                 # Experiment outputs (gitignored)
+├── data/
+│   ├── sae_model/           # Trained SAE weights + features.npy
+│   ├── human_virus_*.jsonl  # Labeled sequence datasets
+│   └── curated_sequences/   # Deduplicated forward-pass inputs
+├── viz/                     # React frontend (feature explorer + experiment viz)
+├── backend/                 # FastAPI backend serving experiment results
+├── configs/extraction/      # Extraction run configs
+├── papers/                  # InterProt, MetaGene-1, SURF papers
+└── vendor/                  # InterProt + MetaGene-1 code (git submodules)
+```
 
 ## Quickstart
 
-Run local fake-model extraction test:
-
+### Run experiments
 ```bash
-PYTHONPATH=src python3 -m metageniuses.extraction.cli \
-  --config configs/extraction/tiny-test.json \
-  --adapter fake
+pip install numpy scipy scikit-learn matplotlib statsmodels umap-learn hdbscan
+
+python experiments/linear_probe_pathogen.py
+python experiments/sae_health_check.py
+python experiments/sequence_umap.py
+python experiments/feature_clustering.py
 ```
 
-Run unit tests:
+### Run Peyton's analysis pipeline
+```bash
+pip install -e .
+metageniuses-analyze-sae \
+  --dataset_jsonl data/human_virus_class1_labeled.jsonl \
+  --activation_path data/sae_model \
+  --output_dir results/analyze \
+  --label_field source --positive_label 1
+```
 
+### Frontend + Backend
+```bash
+# Backend
+cd backend && pip install -r requirements.txt && uvicorn app:app --reload
+
+# Frontend (separate terminal)
+cd viz && npm install && npm run dev
+```
+
+### Run tests
 ```bash
 PYTHONPATH=src python3 -m unittest discover -s tests/extraction -p 'test_*.py'
+python -m pytest tests/sae/
 ```
 
-## Data Organization Rules
+## Papers
 
-1. Put uploaded source files in `data/raw_sources/`.
-2. Keep extraction-ready inputs in `data/curated_sequences/`.
-3. Keep local/test run artifacts in `data/test-activations/` (ignored by git).
-4. Keep cloud/production run outputs in `results/` (ignored by git).
-5. Do not write extraction outputs into `data/curated_sequences/` or `data/raw_sources/`.
+- [InterProt](papers/InterProt.pdf) — SAE on ESM-2 protein language model (Adams et al., 2025)
+- [MetaGene-1](papers/metagene-1.pdf) — Metagenomic foundation model (Liu et al., 2025)
+- [SURF](papers/SURF_Paper.docx) — PBD family specificity via InterProt SAE (Liu & Rogers, 2025)
 
-## Current Status
+## Team
 
-Implemented:
-
-1. Configurable `model_id` selection before forward pass
-2. Configurable layer selection before forward pass
-3. Token-level hidden-state extraction and sharded storage
-4. Resume support for interrupted runs (`--resume` with same `run_id`)
-5. Manifest + loader contract for later SAE module consumption
-6. No-download fake adapter path for reliable local testing
-
-Not implemented yet:
-
-1. SAE training
-2. Biological interpretation
-3. Website/visualization app
+Mannat Jain, Peyton Jackson, Bridget Liu, Ciaran, Astrid
