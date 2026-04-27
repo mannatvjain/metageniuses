@@ -2,11 +2,10 @@ import { NavLink, Outlet, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 const TABS = [
-  { to: "/experiments/1", label: "1. Organism Detectors" },
-  { to: "/experiments/2", label: "2. Linear Probe" },
-  { to: "/experiments/3", label: "3. SAE Health" },
-  { to: "/experiments/4", label: "4. Sequence UMAP" },
-  { to: "/experiments/5", label: "5. Feature Clusters" },
+  { to: "/experiments/detectors", label: "Pathogen Detector Latents" },
+  { to: "/experiments/encoded-early", label: "Encoded Early" },
+  { to: "/experiments/pathogenicity-vector", label: "Pathogenicity Vector" },
+  { to: "/experiments/sae-health", label: "SAE Health" },
 ];
 
 export default function ExperimentsLayout() {
@@ -24,7 +23,7 @@ export default function ExperimentsLayout() {
           </Link>
           <h1 className="text-lg tracking-wide">
             Meta<span className="text-[#0d8ba1]">Geniuses</span>
-            <span className="text-[#828282] ml-2 text-base" style={{ fontFamily: "'Roboto Condensed', sans-serif", textTransform: "none" }}>Experiments</span>
+            <span className="text-[#828282] ml-2 text-base" style={{ fontFamily: "'Roboto Condensed', sans-serif", textTransform: "none" }}>Results</span>
           </h1>
         </div>
 

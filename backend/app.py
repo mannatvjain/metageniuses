@@ -1,27 +1,15 @@
 """
 MetaGeniuses API backend.
 
-Serves experiment results and feature explorer data.
-Reads from results/ directories if real data exists, otherwise returns dummy data.
-
-To add real data: just drop JSON/CSV files into the appropriate results/<experiment>/ directory.
-The backend will pick them up automatically — no frontend changes needed.
+Serves experiment results and feature explorer data from results/ directories.
+Returns 404 if no data exists for a given endpoint.
 """
 
 import json
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
-from dummy_data import (
-    generate_features,
-    generate_experiment1,
-    generate_experiment2,
-    generate_experiment3,
-    generate_experiment4,
-    generate_experiment5,
-)
 
 app = FastAPI(title="MetaGeniuses API", version="0.1.0")
 
@@ -35,103 +23,48 @@ app.add_middleware(
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 
 
-def _try_load_json(path: Path):
-    """Load JSON file if it exists, return None otherwise."""
+def _load_json(path: Path):
+    """Load JSON file if it exists, raise 404 otherwise."""
     if path.exists():
         with open(path) as f:
             return json.load(f)
-    return None
+    raise HTTPException(status_code=404, detail=f"No data at {path.name}")
 
 
 # ---------------------------------------------------------------------------
-# Feature Explorer (existing UI)
+# Feature Explorer
 # ---------------------------------------------------------------------------
 
 @app.get("/api/features")
 def get_features():
-    """SAE feature list for the explorer sidebar + detail panels."""
-    real = _try_load_json(RESULTS_DIR / "features" / "features.json")
-    if real is not None:
-        return real
-    return generate_features()
+    return _load_json(RESULTS_DIR / "features" / "features.json")
 
 
 @app.get("/api/features/{feature_id}")
 def get_feature(feature_id: int):
-    """Single feature with full detail (histogram, top sequences, taxa)."""
-    real = _try_load_json(RESULTS_DIR / "features" / f"feature_{feature_id}.json")
-    if real is not None:
-        return real
-    # Fall back to finding it in the full dummy set
-    for f in generate_features():
-        if f["id"] == feature_id:
-            return f
-    return {"error": "feature not found"}
+    return _load_json(RESULTS_DIR / "features" / f"feature_{feature_id}.json")
 
 
 # ---------------------------------------------------------------------------
-# Experiment 1: Organism-Specific Pathogen Detectors
+# Experiments
 # ---------------------------------------------------------------------------
 
-@app.get("/api/experiments/1")
-def experiment1():
-    """Volcano plot data, top organism detectors, enrichment stats."""
-    real = _try_load_json(RESULTS_DIR / "organism_detectors" / "api_results.json")
-    if real is not None:
-        return real
-    return generate_experiment1()
+EXPERIMENT_PATHS = {
+    1: "organism_detectors/api_results.json",
+    2: "linear_probe_pathogen/api_results.json",
+    3: "sae_health_check/api_results.json",
+    4: "sequence_umap/api_results.json",
+    5: "feature_clustering/api_results.json",
+    6: "cross_delivery/api_results.json",
+}
 
 
-# ---------------------------------------------------------------------------
-# Experiment 2: Linear Probe
-# ---------------------------------------------------------------------------
-
-@app.get("/api/experiments/2")
-def experiment2():
-    """Probe summary, ROC curve, coefficient distribution, top latents."""
-    real = _try_load_json(RESULTS_DIR / "linear_probe_pathogen" / "api_results.json")
-    if real is not None:
-        return real
-    return generate_experiment2()
-
-
-# ---------------------------------------------------------------------------
-# Experiment 3: SAE Health Check
-# ---------------------------------------------------------------------------
-
-@app.get("/api/experiments/3")
-def experiment3():
-    """Dead/alive census, activation distributions, sparsity stats."""
-    real = _try_load_json(RESULTS_DIR / "sae_health_check" / "api_results.json")
-    if real is not None:
-        return real
-    return generate_experiment3()
-
-
-# ---------------------------------------------------------------------------
-# Experiment 4: Sequence UMAP
-# ---------------------------------------------------------------------------
-
-@app.get("/api/experiments/4")
-def experiment4():
-    """UMAP coordinates colored by pathogen label, PCA variance."""
-    real = _try_load_json(RESULTS_DIR / "sequence_umap" / "api_results.json")
-    if real is not None:
-        return real
-    return generate_experiment4()
-
-
-# ---------------------------------------------------------------------------
-# Experiment 5: Feature Clustering
-# ---------------------------------------------------------------------------
-
-@app.get("/api/experiments/5")
-def experiment5():
-    """Latent UMAP colored by cluster, enrichment overlay, cluster summary."""
-    real = _try_load_json(RESULTS_DIR / "feature_clustering" / "api_results.json")
-    if real is not None:
-        return real
-    return generate_experiment5()
+@app.get("/api/experiments/{experiment_id}")
+def experiment(experiment_id: int):
+    path = EXPERIMENT_PATHS.get(experiment_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail=f"Unknown experiment {experiment_id}")
+    return _load_json(RESULTS_DIR / path)
 
 
 if __name__ == "__main__":

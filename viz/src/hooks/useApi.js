@@ -2,13 +2,20 @@ import { useState, useEffect } from "react";
 
 const BASE = import.meta.env.BASE_URL || "/";
 
+const URL_MAP = {
+  "/api/experiments/1": `${BASE}data/experiment1.json`,
+  "/api/page/detectors": `${BASE}data/experiment1.json`,
+  "/api/page/encoded-early": `${BASE}data/page2_encoded_early.json`,
+  "/api/page/pathogenicity-vector": `${BASE}data/page3_pathogenicity_vector.json`,
+  "/api/page/sae-health": `${BASE}data/page4_sae_health.json`,
+};
+
 export default function useApi(url) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Map /api/experiments/N → static JSON files
-  const staticUrl = url.replace(/^\/api\/experiments\/(\d+)$/, `${BASE}data/experiment$1.json`);
+  const staticUrl = URL_MAP[url] || url.replace(/^\/api\/experiments\/(\d+)$/, `${BASE}data/experiment$1.json`);
 
   useEffect(() => {
     let cancelled = false;

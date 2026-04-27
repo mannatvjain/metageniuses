@@ -36,7 +36,7 @@ export default function Experiment1() {
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h2 className="text-2xl mb-1">Organism-Specific Pathogen Detectors</h2>
+        <h2 className="text-2xl mb-1">Pathogen Detector Latents</h2>
         <p className="text-sm text-[#828282]" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
           SAE latents that fire specifically on pathogen sequences, identified via enrichment analysis and validated with NCBI BLAST.
         </p>

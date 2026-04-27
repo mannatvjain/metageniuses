@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, BarChart3, Shield, ArrowRight, FlaskConical } from "lucide-react";
+import { Search, BarChart3, Shield, FlaskConical } from "lucide-react";
 
 const ROTATING_WORDS = [
   { text: "Pathogenic Sequences", color: "#8a0038" },
@@ -12,29 +12,29 @@ const ROTATING_WORDS = [
 ];
 
 const STATS = [
-  { label: "Sequences Analyzed", value: "85,432" },
-  { label: "SAE Features Learned", value: "4,096" },
-  { label: "Layers Extracted", value: "4" },
-  { label: "Pathogen Classes", value: "7" },
+  { label: "Sequences Analyzed", value: "20,000" },
+  { label: "SAE Latents", value: "32,768" },
+  { label: "Layers Analyzed", value: "4" },
+  { label: "Organism Detectors", value: "27" },
 ];
 
 const FEATURES = [
   {
     icon: Search,
-    title: "Feature Explorer",
-    desc: "Browse sparse autoencoder features and see which sequences activate them.",
+    title: "Organism Detectors",
+    desc: "27 BLAST-validated SAE latents that fire on specific pathogens: astrovirus, norovirus, adenovirus.",
     color: "text-[#0d8ba1]",
   },
   {
     icon: BarChart3,
-    title: "Activation Heatmaps",
-    desc: "Visualize feature activations across sequences with per-token resolution.",
+    title: "Linear Probe",
+    desc: "94.6% accuracy classifying pathogen vs non-pathogen from sparse features alone (0.987 AUROC).",
     color: "text-[#4e8c02]",
   },
   {
     icon: Shield,
-    title: "Pathogen Detection",
-    desc: "Map learned features to known pathogen classes for interpretable surveillance.",
+    title: "Cross-Delivery",
+    desc: "Signal generalizes across sequencing batches with only 0.8% accuracy drop.",
     color: "text-[#8a0038]",
   },
 ];
@@ -85,16 +85,8 @@ export default function LandingPage() {
         </p>
         <div className="flex items-center gap-3">
           <Link
-            to="/explorer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition cursor-pointer tracking-wide no-underline"
-            style={{ fontFamily: "'Roboto Condensed', sans-serif" }}
-          >
-            Explore Features
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
             to="/experiments"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition cursor-pointer tracking-wide no-underline"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition cursor-pointer tracking-wide no-underline"
             style={{ fontFamily: "'Roboto Condensed', sans-serif" }}
           >
             Experiments

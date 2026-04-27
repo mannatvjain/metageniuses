@@ -234,6 +234,15 @@ fig.savefig(OUT_DIR / "roc_curve_class2.png", dpi=150)
 plt.close()
 print(f"\nSaved: {OUT_DIR / 'roc_curve_class2.png'}")
 
+# Save ROC curve points for both classes
+roc_data = {
+    "class1": [{"fpr": float(a), "tpr": float(b)} for a, b in zip(fpr_c1, tpr_c1)],
+    "class2": [{"fpr": float(a), "tpr": float(b)} for a, b in zip(fpr_c2, tpr_c2)],
+}
+with open(OUT_DIR / "roc_curves.json", "w") as f:
+    json.dump(roc_data, f)
+print(f"Saved: {OUT_DIR / 'roc_curves.json'}")
+
 # ============================================================
 # Step 3: Feature stability analysis
 # ============================================================

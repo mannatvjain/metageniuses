@@ -15,7 +15,7 @@ export function ErrorState({ message }) {
       <div className="text-center p-6 rounded-lg bg-red-50 border border-red-200 max-w-md">
         <p className="text-sm text-red-700 font-bold mb-1">Failed to load data</p>
         <p className="text-xs text-red-500" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>{message}</p>
-        <p className="text-xs text-[#828282] mt-2">Make sure the backend is running: <code className="bg-red-100 px-1 rounded">cd backend && python app.py</code></p>
+        <p className="text-xs text-[#828282] mt-2">Data file may be missing or malformed. Check <code className="bg-red-100 px-1 rounded">viz/public/data/</code></p>
       </div>
     </div>
   );
