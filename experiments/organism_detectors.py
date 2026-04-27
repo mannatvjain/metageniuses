@@ -54,7 +54,7 @@ LAYER_DATA_DIRS = {
 }
 
 BLAST_URL = "https://blast.ncbi.nlm.nih.gov/blast/Blast.cgi"
-BLAST_EMAIL = "mannat.v.jain@columbia.edu"
+BLAST_EMAIL = "mannatjain@gmail.com"
 BLAST_TOOL = "metageniuses"
 
 TOP_LATENTS_CAP = 50
@@ -895,10 +895,10 @@ def run_part_e(enrichment, organism_labels=None):
 
     # --- E2: Organism detector bar chart ---
     if organism_labels:
-        high_conf = [r for r in organism_labels if r["confidence"] in ("high", "medium")][:15]
+        high_conf = [r for r in organism_labels if r["confidence"] in ("high", "medium")]
         if high_conf:
-            from matplotlib.patches import Patch
             from collections import defaultdict
+            import matplotlib.ticker as mticker
 
             # --- Aggregate by organism ---
             org_data = defaultdict(lambda: {"latents": [], "consistencies": [], "identities": []})
@@ -908,67 +908,94 @@ def run_part_e(enrichment, organism_labels=None):
                 org_data[org]["consistencies"].append(int(r["hit_consistency"].split("/")[0]))
                 org_data[org]["identities"].append(float(r.get("mean_percent_identity", 0)))
 
-            # Sort organisms by number of detector latents (descending)
             orgs_sorted = sorted(org_data.keys(), key=lambda o: len(org_data[o]["latents"]), reverse=True)
 
-            # Build summary rows: organism, # latents, mean consistency, mean identity, max consistency
             rows = []
             for org in orgs_sorted:
                 d = org_data[org]
                 rows.append({
                     "organism": org,
                     "n_latents": len(d["latents"]),
-                    "mean_consistency": np.mean(d["consistencies"]),
                     "max_consistency": max(d["consistencies"]),
                     "mean_identity": np.mean(d["identities"]),
-                    "best_latent": d["latents"][np.argmax(d["consistencies"])],
                 })
 
-            # --- Figure: grouped bar chart ---
-            palette = {"Human astrovirus": "#7fb685", "Norovirus GI": "#7b8cc2",
-                       "Norovirus GII": "#d4a76a", "Human adenovirus": "#5cb8b2",
-                       "Sapovirus GI.1": "#c27b9e", "Astrovirus MLB1": "#b8a9d4",
-                       "Mamastrovirus sp.": "#d4c25c"}
+            # --- Figure ---
+            fig, ax = plt.subplots(figsize=(8, 3.8))
 
-            fig, ax = plt.subplots(figsize=(10, 5))
-
+            max_n = max(r["n_latents"] for r in rows)
             y_pos = np.arange(len(rows))
-            bar_height = 0.6
-            colors = [palette.get(r["organism"], "#999999") for r in rows]
+            bar_height = 0.52
 
-            bars = ax.barh(y_pos, [r["n_latents"] for r in rows], height=bar_height,
-                           color=colors, edgecolor="white", linewidth=1.2)
+            # Blue-red gradient: map n_latents to RdBu_r (more latents → redder)
+            cmap = plt.cm.RdBu_r
+            norm = plt.Normalize(vmin=min(r["n_latents"] for r in rows) - 1,
+                                 vmax=max_n + 1)
+            colors = [cmap(norm(r["n_latents"])) for r in rows]
 
-            # Labels on bars
+            ax.barh(y_pos, [r["n_latents"] for r in rows], height=bar_height,
+                    color=colors, edgecolor="none", zorder=3)
+
+            # Count label: always inside bar to avoid breaking out of the box
             for i, r in enumerate(rows):
-                # Number of latents inside the bar
-                ax.text(r["n_latents"] - 0.15, i, str(r["n_latents"]),
-                        va="center", ha="right", fontsize=11, fontweight="bold", color="white")
-                # Annotation to the right
-                ax.text(r["n_latents"] + 0.3, i,
-                        f"best {r['max_consistency']}/10 consistency  |  {r['mean_identity']:.1f}% avg identity",
-                        va="center", ha="left", fontsize=9, color="#444444")
+                if r["n_latents"] >= 2:
+                    ax.text(r["n_latents"] - 0.3, i, str(r["n_latents"]),
+                            va="center", ha="right", fontsize=10, fontweight="bold",
+                            color="white", zorder=4)
+                else:
+                    ax.text(0.15, i, str(r["n_latents"]),
+                            va="center", ha="left", fontsize=10, fontweight="bold",
+                            color="white", zorder=4)
+
+            # Right-side annotation columns
+            col1_x = max_n + 4.5
+            col2_x = max_n + 8.5
+            for i, r in enumerate(rows):
+                ax.text(col1_x, i, f"{r['max_consistency']}/10",
+                        va="center", ha="center", fontsize=9, color="#333333",
+                        fontweight="bold")
+                ax.text(col2_x, i, f"{r['mean_identity']:.1f}%",
+                        va="center", ha="center", fontsize=9, color="#333333")
+
+            # Column headers
+            ax.text(col1_x, -0.82, "Best\nConsistency", va="center", ha="center",
+                    fontsize=7.5, color="#999999", fontweight="bold", linespacing=1.2)
+            ax.text(col2_x, -0.82, "Mean\nIdentity", va="center", ha="center",
+                    fontsize=7.5, color="#999999", fontweight="bold", linespacing=1.2)
 
             ax.set_yticks(y_pos)
-            ax.set_yticklabels([r["organism"] for r in rows], fontsize=11, fontweight="medium")
-            ax.set_xlabel("Number of Detector Latents", fontsize=11)
-            ax.set_title("Organism-Specific Pathogen Detectors Identified by BLAST",
-                         fontsize=13, fontweight="bold", pad=12)
+            ax.set_yticklabels([r["organism"] for r in rows], fontsize=10)
+            ax.set_xlabel("Number of SAE Detector Latents", fontsize=9.5, labelpad=8)
             ax.invert_yaxis()
-            ax.set_xlim(0, max(r["n_latents"] for r in rows) + 8)
-            ax.spines["top"].set_visible(False)
-            ax.spines["right"].set_visible(False)
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+            ax.set_xlim(0, max_n + 11)
+            ax.set_ylim(len(rows) - 0.6, -1.2)
 
-            # Subtitle
+            # Clean chrome
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            ax.tick_params(axis="y", length=0)
+            ax.tick_params(axis="x", colors="#AAAAAA", labelcolor="#666666")
+            ax.set_axisbelow(True)
+            ax.xaxis.grid(True, color="#EEEEEE", linewidth=0.7)
+
+            # Title + subtitle
+            n_total = sum(r["n_latents"] for r in rows)
             n_high = len([r for r in high_conf if r.get("confidence") == "high"])
             n_med = len([r for r in high_conf if r.get("confidence") == "medium"])
-            ax.text(0.0, -0.08,
-                    f"{n_high} high-confidence + {n_med} medium-confidence detectors across {len(rows)} organisms  |  "
-                    f"All detectors fire exclusively on pathogen sequences (Fisher OR = ∞)",
-                    transform=ax.transAxes, fontsize=8.5, color="#666666", va="top")
+            ax.set_title(
+                "Organism-Specific Pathogen Detectors Identified via BLAST",
+                fontsize=11.5, fontweight="bold", pad=18, loc="left")
+            ax.text(0.0, 1.01,
+                    f"{n_total} detector latents ({n_high} high + {n_med} medium confidence) "
+                    f"across {len(rows)} organisms  ·  "
+                    f"All fire exclusively on pathogen sequences",
+                    transform=ax.transAxes, ha="left", va="bottom",
+                    fontsize=8, color="#999999")
 
             fig.tight_layout()
-            fig.savefig(OUT_DIR / "top_organism_detectors.png", dpi=200, bbox_inches="tight")
+            fig.savefig(OUT_DIR / "top_organism_detectors.png", dpi=200,
+                        bbox_inches="tight", facecolor="white")
             plt.close()
             print(f"  Saved: top_organism_detectors.png")
         else:
@@ -1149,7 +1176,7 @@ def run_part_f(enrichment, organism_labels=None, blast_results=None, top_sequenc
 # ============================================================
 
 def main():
-    global DATA_DIR, OUT_DIR
+    global DATA_DIR, OUT_DIR, BLAST_SUBMIT_DELAY
     parser = argparse.ArgumentParser(description="Experiment 1: Organism-Specific Pathogen Detectors")
     parser.add_argument("--parts", default="ABCDEF",
                         help="Which parts to run (e.g., 'AB', 'C', 'DEF', 'ABCDEF')")
@@ -1157,6 +1184,8 @@ def main():
                         help="Test BLAST with 3 latents x 3 sequences only")
     parser.add_argument("--layer", type=int, default=32,
                         help="Which layer's SAE features to use (8, 16, 24, 32)")
+    parser.add_argument("--blast-delay", type=float, default=None,
+                        help="Seconds between BLAST submissions (default: 0.5)")
     args = parser.parse_args()
 
     # Set data/output dirs based on layer
@@ -1175,7 +1204,10 @@ def main():
     print(f"Layer: {args.layer}")
     print(f"Data dir: {DATA_DIR}")
     print(f"Output dir: {OUT_DIR}")
+    if args.blast_delay is not None:
+        BLAST_SUBMIT_DELAY = args.blast_delay
     print(f"BLAST test mode: {args.blast_test}")
+    print(f"BLAST submit delay: {BLAST_SUBMIT_DELAY}s")
 
     features = None
     sequence_ids = None

@@ -165,6 +165,18 @@
 | `src/metageniuses/sae/analyze.py` | Full SAE analysis CLI: enrichment, probe, k-mer, differential signature, plots |
 | `tests/sae/test_analyze.py` | Tests for analyze.py |
 
+## Paper Writeup
+| File | Purpose |
+|------|---------|
+| `paper/results/README.md` | Overview of all experiment results for Peyton's Overleaf agent |
+| `paper/results/experiment_1_organism_detectors.md` | Exp 1: organism-specific pathogen detectors via BLAST |
+| `paper/results/experiment_2_linear_probe.md` | Exp 2: linear probe classification metrics |
+| `paper/results/experiment_3_sae_health_check.md` | Exp 3: SAE health statistics |
+| `paper/results/experiment_4_sequence_umap.md` | Exp 4: sequence UMAP + sub-clustering |
+| `paper/results/experiment_5_feature_clustering.md` | Exp 5: latent clustering analysis |
+| `paper/results/experiment_6_cross_delivery.md` | Exp 6: cross-delivery generalization |
+| `paper/results/compilation.md` | Expected vs observed results + future directions |
+
 ## Papers
 | File | Purpose |
 |------|---------|

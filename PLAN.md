@@ -78,19 +78,25 @@
   - [x] Encode class 2 sequences through SAE — received from Bridget (data/sae_model/features_class2.npy)
   - [x] Test probe + enrichment stability across deliveries — 93.96% acc (delta -0.8%), Spearman r=0.79
 
-## Phase 4b: Multi-Layer Analysis (blocked on Peyton's RunPod run)
-- [ ] Extract residual stream activations at layers 8, 16, 24 (Peyton — RunPod)
-- [ ] Train SAEs at layers 8, 16, 24 (Peyton — RunPod, same hyperparams as layer 32)
-- [ ] Encode mean-pooled features at each layer (Peyton — `encode_features.py`)
-- [ ] Encode per-token sparse activations at each layer (Peyton — modified `encode_features.py`, sparse COO/CSR format)
-- [ ] Also re-encode layer 32 with per-token output
-- [ ] Mean-pool raw activations at each layer (no SAE) for comparison
-- [ ] Layer-wise probe comparison, experiment 7 — SAE vs raw probes at 4 layers
-- [ ] Activation pattern classification, experiment 8 — classify latents as point/motif/periodic/whole across layers
-- [ ] Token-level pathogen localization, experiment 10 — per-token pathogen scoring + BLAST hotspots (hero figure)
+## Phase 4b: Multi-Layer Analysis
+- [x] Extract + train SAEs at layers 8, 16, 24 (Peyton — RunPod, same hyperparams as layer 32)
+- [x] Peyton's analysis pipeline run on layers 8, 16, 24 (probes, differential signatures, k-mers, projections)
+  - Layer 8: AUROC=0.9912, Acc=0.9545, 15,930 significant features
+  - Layer 16: AUROC=0.9906, Acc=0.9540, 14,164 significant features
+  - Layer 24: AUROC=0.9914, Acc=0.9535, 14,319 significant features
+- [ ] Layer 16 organism detectors (Exp 1 pipeline) — in progress (separate agent, 2026-04-26)
+  - [x] Part A: enrichment scan — 5,855 pathogen-enriched, 7 pathogen-specific (F1>0.7)
+  - [x] Part B: sequence retrieval — 50 latents x 10 seqs = 500 to BLAST
+  - [ ] Part C: BLAST — 22/50 latents submitted as of last check
+  - [ ] Parts D-F: organism labeling, figures, API payload
+- [ ] Encode per-token sparse activations (not prioritized for hackathon)
+- [ ] Layer-wise probe comparison, experiment 7 (not prioritized for hackathon)
+- [ ] Activation pattern classification, experiment 8 (not prioritized for hackathon)
+- [ ] Token-level pathogen localization, experiment 10 (not prioritized for hackathon)
 
 ## Phase 5: Writeup & Presentation
-- [ ] Write hackathon submission
+- [x] Collect all experiment results into `paper/results/` with per-experiment docs + compilation
+- [ ] Write hackathon submission (Peyton working on Overleaf)
   - [ ] Motivation: interpretable pandemic surveillance
   - [ ] Method: SAE on MetaGene-1 (adapted from InterProt)
   - [ ] Results: organism-specific pathogen detector features + BLAST evidence

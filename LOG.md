@@ -2,6 +2,59 @@
 
 Reverse-chronological. Each session appends what changed, what's unfinished, what to pick up next.
 
+### 2026-04-27 (session 9 — paper writing + figure generation)
+- Reviewed `paper/results/` folder (214MB, 83 data files, 34 figures, 8 markdown docs) for paper writeup
+- Confirmed layer 16 BLAST completed: 30 high-confidence + 13 medium-confidence organism detectors (vs 12 high + 15 medium at layer 32)
+  - Layer 16 covers broader taxonomy: Human astrovirus (13), Norovirus GII (5), Sapovirus GI (4), Norovirus GI (4), Mamastrovirus sp. (3), Astrovirus MLB1 (1)
+- Confirmed layers 8 and 24 BLAST both failed (NCBI returned HTML errors, 0/500 hits each)
+- Confirmed layer 24 enrichment: 6,482 pathogen-enriched, 4,926 non-pathogen-enriched, 10 pathogen-specific (F1>0.7)
+- Generated 4 InterProt-style figures in `paper/figures_interprot/`:
+  - `specific_features_by_layer.png` — F1>0.7 latent count across layers (52/7/10/4)
+  - `organism_detector_histogram.png` — bimodal activation for astrovirus latent (InterProt Fig 3a equivalent)
+  - `probe_auroc_by_layer.png` — AUROC + accuracy across layers (InterProt Fig 5 equivalent)
+  - `enrichment_symmetry_by_layer.png` — pathogen vs non-pathogen enriched counts by layer
+- Script: `paper/make_interprot_figures.py`
+- Read InterProt paper (17 pages) and mapped all 10 figures to our data; identified 4 we can make, 6 we cannot (require 3D structures, human eval, steering, hyperparam sweep, or per-token data)
+- Read existing Overleaf draft (provided by Mannat) — covers intro, related work, methods, 3 results sections
+- Drafted LaTeX paragraphs for Peyton to add to Overleaf:
+  - Layer 16 organism detectors subsubsection with Table (organism comparison layer 16 vs 32)
+  - Enrichment symmetry subsubsection with Table (all 4 layers)
+  - Discussion section (3 key findings + biosurveillance implications)
+  - Limitations paragraph (mean-pooling, incomplete BLAST, no raw-activation baseline, single SAE config)
+  - Future work paragraph (token-level localization, activation pattern classification, multi-class species classifier)
+  - Conclusion paragraph
+- All drafted text given directly to Mannat for pasting into Overleaf; no files written to repo for these
+- **Unfinished**: Layers 8 and 24 BLAST still need re-running. Layer 16 results not yet in `paper/results/` compilation docs.
+- **Next up**: Re-run layers 8 and 24 BLAST when NCBI is available. Update `paper/results/compilation.md` with final layer 16 numbers. Figures + presentation prep.
+- **Plan impact**: No change to PLAN.md
+
+### 2026-04-26 (session 8 — data provenance investigation)
+- Traced `human_virus_class1_labeled.jsonl` and `class2_labeled.jsonl` back to `data/raw_sources/human_virus_infecting.csv`
+  - Class1 = CSV rows 0–19,999 (exact order match confirmed)
+  - Class2 = CSV rows 20,000–39,999 (exact order match confirmed)
+  - All 40,000 sequences found in CSV, labels match (except 70 cross-class duplicate sequences — benign)
+- Confirmed dataset origin: `docs/datasets/data_sources.docx` references MetaGene-1 paper (arxiv 2501.02045) and gene-mteb benchmark
+  - `human_virus_infecting.csv` is a **pre-curated benchmark dataset** from gene-mteb, not custom-collected
+  - 80,000 rows, 4 classes × 20,000, perfectly balanced (10k source=0 + 10k source=1 per class)
+  - Sequences: 91–291 bp, pure ACGTN alphabet, 77,495 unique (2,235 duplicated across classes)
+- No code changes, research-only session
+- **Next up**: Layer 16 BLAST results → organism labels → paper. Peyton continues Overleaf.
+- **Plan impact**: No change
+
+### 2026-04-26 (session 7 — paper results compilation)
+- Created `paper/results/` (126 files, 214MB) — fully self-contained package for Peyton's Overleaf agent
+  - 7 per-experiment markdown docs with all methodology + exact numbers inline
+  - `compilation.md` — expected vs observed results, multi-layer comparison, layer 16 in-progress enrichment numbers, future directions
+  - `layer_comparison.md` — multi-layer probe results (layers 8/16/24) from Peyton's pipeline
+  - `figures/` — all 30+ PNGs organized by experiment + 15 layer comparison plots, ready for Overleaf upload
+  - `data/` — ALL raw CSVs, JSONs, sequence datasets, k-mer enrichments, probe coefficients, differential signatures, feature stats, cluster assignments, SAE config, training curves, sequence ID mappings. Everything except the large .npy feature matrices (2.4GB each) and sae_final.pt (1GB).
+  - `README.md` — complete folder manifest with tree structure + pointers for Peyton's agent
+- **Discovery**: Peyton's pipeline already ran on layers 8, 16, AND 24 (results in `results/analyze_layer{8,16,24}/`). All three have probe metrics, differential signatures, volcano plots, PCA/t-SNE projections, k-mer enrichments. All incorporated.
+- **Key multi-layer finding**: Probe AUROC nearly identical across layers (0.991 at L8, 0.991 at L16, 0.991 at L24 vs 0.987 at L32). Pathogen signal present from early layers. But layer 16 enrichment scan shows different character: fewer pathogen-enriched (5,855 vs 16,519) but more pathogen-specific (7 vs 4) and more symmetric enrichment.
+- **In-progress**: Layer 16 organism detectors (separate agent). Parts A+B done. Part C (BLAST) running — 22/50 latents submitted. Results landing in `results/organism_detectors_layer16/`.
+- Updated PLAN.md (marked layer 8/16/24 analysis done, detailed layer 16 organism detector progress), INDEX.md, LOG.md
+- **Next up**: Layer 16 BLAST finishes → organism labels → incorporate into paper. Peyton writes Overleaf doc using `paper/results/`. Then figures + presentation.
+
 ### 2026-04-26 (session 6 — experiment execution)
 - **Experiment 1 (organism detectors) — COMPLETE**
   - Part A: enrichment scan across 32,768 latents — 16,519 pathogen-enriched (Fisher FDR<0.01, OR>1), 2,534 non-pathogen-enriched, 4 pathogen-specific (F1>0.7), 19,533 Wilcoxon significant
