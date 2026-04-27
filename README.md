@@ -79,4 +79,4 @@ python -m pytest tests/sae/
 
 ## Team
 
-Mannat Jain, Peyton Jackson, Bridget Liu, Ciaran, Astrid
+Mannat Jain, Peyton Jackson, Bridget Liu, Ciaran Walsh, Astrid Teo
