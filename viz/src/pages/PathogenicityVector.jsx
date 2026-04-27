@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useApi from "../hooks/useApi";
 import { Loading, ErrorState } from "../components/LoadingState";
+import CanvasScatter from "../components/CanvasScatter";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceLine,
@@ -23,7 +24,7 @@ export default function PathogenicityVector() {
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} />;
 
-  const { probe, roc_curve, top_latents, coefficient_distribution, umap, cross_delivery, stability_scatter } = data;
+  const { probe, roc_curve, top_latents, coefficient_distribution, umap, cross_delivery, stability_scatter, cross_roc } = data;
 
   const tabs = [
     { id: "umap", label: "Sequence UMAP" },
@@ -49,7 +50,7 @@ export default function PathogenicityVector() {
           { label: "MCC", value: probe.mcc.toFixed(3), color: "#8a0038" },
           { label: "Cross-Delivery Acc", value: (cross_delivery.class2_test.accuracy * 100).toFixed(1) + "%", color: "#4e8c02" },
           { label: "Delta", value: (cross_delivery.delta.accuracy * 100).toFixed(1) + "%", color: "#b88a00" },
-          { label: "Feature Stability (rho)", value: cross_delivery.feature_stability.spearman_all.toFixed(3), color: "#6b4fa0" },
+          { label: "Feature Stability (\u03C1)", value: cross_delivery.feature_stability.spearman_all.toFixed(3), color: "#6b4fa0" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border border-gray-100 p-3 text-center shadow-sm">
             <div className="text-xl" style={{ fontFamily: "'VT323', monospace", color: s.color }}>{s.value}</div>
@@ -75,31 +76,21 @@ export default function PathogenicityVector() {
         ))}
       </div>
 
-      {/* Tab content */}
       {activeTab === "umap" && <UmapPanel umap={umap} />}
       {activeTab === "probe" && (
-        <ProbePanel
-          roc_curve={roc_curve}
-          top_latents={top_latents}
-          coefficient_distribution={coefficient_distribution}
-          probe={probe}
-        />
+        <ProbePanel roc_curve={roc_curve} top_latents={top_latents} coefficient_distribution={coefficient_distribution} probe={probe} />
       )}
       {activeTab === "generalization" && (
-        <GeneralizationPanel
-          cross_delivery={cross_delivery}
-          stability_scatter={stability_scatter}
-          roc_curve={roc_curve}
-          cross_roc={data.cross_roc}
-        />
+        <GeneralizationPanel cross_delivery={cross_delivery} stability_scatter={stability_scatter} cross_roc={cross_roc} />
       )}
     </div>
   );
 }
 
 function UmapPanel({ umap }) {
-  const pathogen = umap.points.filter((p) => p.label === 1);
-  const nonpathogen = umap.points.filter((p) => p.label === 0);
+  const pts = umap.points;
+  const nPath = pts.filter((p) => p.label === 1).length;
+  const nNon = pts.filter((p) => p.label === 0).length;
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
@@ -109,35 +100,28 @@ function UmapPanel({ umap }) {
       <p className="text-xs text-[#828282] mb-3" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
         20,000 sequences projected from 32,768-dim SAE space via PCA (50d) then UMAP. Hover for details.
       </p>
-      <ResponsiveContainer width="100%" height={500}>
-        <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis type="number" dataKey="x" name="UMAP 1" tick={{ fontSize: 11 }}
-            label={{ value: "UMAP 1", position: "bottom", offset: 15, style: { fontSize: 12 } }} />
-          <YAxis type="number" dataKey="y" name="UMAP 2" tick={{ fontSize: 11 }}
-            label={{ value: "UMAP 2", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
-          <Tooltip content={<UmapTooltip />} />
-          <Scatter name="Non-pathogen" data={nonpathogen} fill={COLORS.nonpathogen} fillOpacity={0.4} r={2} />
-          <Scatter name="Pathogen" data={pathogen} fill={COLORS.pathogen} fillOpacity={0.4} r={2} />
-        </ScatterChart>
-      </ResponsiveContainer>
-      <div className="flex items-center justify-center gap-6 mt-2 text-xs text-[#828282]">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8a0038] inline-block" />Pathogen ({pathogen.length.toLocaleString()})</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#0d8ba1] inline-block" />Non-pathogen ({nonpathogen.length.toLocaleString()})</span>
-      </div>
-    </div>
-  );
-}
-
-function UmapTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div className="bg-white border border-gray-200 rounded-md shadow-sm p-2 text-xs">
-      <p className="font-bold">{d.sequence_id}</p>
-      <p style={{ color: d.label === 1 ? COLORS.pathogen : COLORS.nonpathogen }}>
-        {d.label === 1 ? "Pathogen" : "Non-pathogen"}
-      </p>
+      <CanvasScatter
+        data={pts}
+        series={[
+          { filter: (d) => d.label === 0, color: COLORS.nonpathogen, opacity: 0.5, radius: 2.5 },
+          { filter: (d) => d.label === 1, color: COLORS.pathogen, opacity: 0.5, radius: 2.5 },
+        ]}
+        height={500}
+        xLabel="UMAP 1"
+        yLabel="UMAP 2"
+        tooltipContent={(pt) => (
+          <>
+            <p className="font-bold">{pt.sequence_id}</p>
+            <p style={{ color: pt.label === 1 ? COLORS.pathogen : COLORS.nonpathogen }}>
+              {pt.label === 1 ? "Pathogen" : "Non-pathogen"}
+            </p>
+          </>
+        )}
+        legend={[
+          { color: COLORS.pathogen, label: `Pathogen (${nPath.toLocaleString()})` },
+          { color: COLORS.nonpathogen, label: `Non-pathogen (${nNon.toLocaleString()})` },
+        ]}
+      />
     </div>
   );
 }
@@ -149,7 +133,7 @@ function ProbePanel({ roc_curve, top_latents, coefficient_distribution, probe })
   return (
     <div className="space-y-5">
       <div className="grid md:grid-cols-2 gap-6">
-        {/* ROC Curve */}
+        {/* ROC Curve — small data, Recharts is fine */}
         <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-3" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
             ROC Curve
@@ -169,7 +153,7 @@ function ProbePanel({ roc_curve, top_latents, coefficient_distribution, probe })
           <p className="text-xs text-center text-[#828282] mt-1">AUROC = {probe.auroc.toFixed(3)}</p>
         </div>
 
-        {/* Coefficient distribution */}
+        {/* Coefficient distribution — small data, Recharts fine */}
         <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-3" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
             Coefficient Distribution
@@ -193,7 +177,6 @@ function ProbePanel({ roc_curve, top_latents, coefficient_distribution, probe })
         </div>
       </div>
 
-      {/* Top latents tables */}
       <div className="grid md:grid-cols-2 gap-6">
         <LatentTable title="Top Pathogen-Associated" latents={pathogenLatents} color={COLORS.pathogen} />
         <LatentTable title="Top Non-Pathogen-Associated" latents={nonpathogenLatents} color={COLORS.nonpathogen} />
@@ -235,7 +218,7 @@ function LatentTable({ title, latents, color }) {
 }
 
 function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
-  const { class1_train, class2_test, delta, feature_stability } = cross_delivery;
+  const { class1_train, class2_test, feature_stability } = cross_delivery;
 
   const comparisonData = [
     { metric: "Accuracy", class1: class1_train.accuracy, class2: class2_test.accuracy },
@@ -244,13 +227,9 @@ function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
     { metric: "F1", class1: class1_train.f1, class2: class2_test.f1 },
   ];
 
-  const bothPts = stability_scatter.filter((p) => p.sig === "both");
-  const onePts = stability_scatter.filter((p) => p.sig === "one");
-  const nsPts = stability_scatter.filter((p) => p.sig === "ns");
-
   return (
     <div className="space-y-5">
-      {/* Side-by-side metrics */}
+      {/* Metrics table */}
       <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
           Train on Class 1, Test on Class 2
@@ -258,31 +237,29 @@ function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
         <p className="text-xs text-[#828282] mb-4" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
           The probe was trained on one sequencing delivery (Class 1) and tested on a completely separate delivery (Class 2).
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-xs text-[#828282]">
-                <th className="py-2 pr-4">Metric</th>
-                <th className="py-2 pr-4 text-right">Class 1 (train)</th>
-                <th className="py-2 pr-4 text-right">Class 2 (test)</th>
-                <th className="py-2 text-right">Delta</th>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-[#828282]">
+              <th className="py-2 pr-4">Metric</th>
+              <th className="py-2 pr-4 text-right">Class 1 (train)</th>
+              <th className="py-2 pr-4 text-right">Class 2 (test)</th>
+              <th className="py-2 text-right">Delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparisonData.map((row) => (
+              <tr key={row.metric} className="border-b border-gray-50">
+                <td className="py-2.5 pr-4 font-medium">{row.metric}</td>
+                <td className="py-2.5 pr-4 text-right font-mono" style={{ color: "#0d8ba1" }}>{row.class1.toFixed(4)}</td>
+                <td className="py-2.5 pr-4 text-right font-mono" style={{ color: "#8a0038" }}>{row.class2.toFixed(4)}</td>
+                <td className="py-2.5 text-right font-mono text-[#828282]">{(row.class2 - row.class1).toFixed(4)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {comparisonData.map((row) => (
-                <tr key={row.metric} className="border-b border-gray-50">
-                  <td className="py-2.5 pr-4 font-medium">{row.metric}</td>
-                  <td className="py-2.5 pr-4 text-right font-mono" style={{ color: "#0d8ba1" }}>{row.class1.toFixed(4)}</td>
-                  <td className="py-2.5 pr-4 text-right font-mono" style={{ color: "#8a0038" }}>{row.class2.toFixed(4)}</td>
-                  <td className="py-2.5 text-right font-mono text-[#828282]">{(row.class2 - row.class1).toFixed(4)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Dual ROC curves */}
+      {/* Dual ROC curves — small data, Recharts fine */}
       {cross_roc && (
         <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-1" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
@@ -299,8 +276,8 @@ function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
               <YAxis type="number" dataKey="tpr" domain={[0, 1]} tick={{ fontSize: 11 }}
                 label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
               <Tooltip formatter={(v) => v.toFixed(3)} />
-              <Scatter name="Class 1 (train)" data={cross_roc.class1} line={{ stroke: "#0d8ba1", strokeWidth: 2 }} fill="none" legendType="none" />
-              <Scatter name="Class 2 (test)" data={cross_roc.class2} line={{ stroke: "#8a0038", strokeWidth: 2 }} fill="none" legendType="none" />
+              <Scatter data={cross_roc.class1} line={{ stroke: "#0d8ba1", strokeWidth: 2 }} fill="none" legendType="none" />
+              <Scatter data={cross_roc.class2} line={{ stroke: "#8a0038", strokeWidth: 2 }} fill="none" legendType="none" />
               <Scatter data={[{ fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }]} line={{ stroke: "#d4d4d4", strokeWidth: 1, strokeDasharray: "5 5" }} fill="none" legendType="none" />
             </ScatterChart>
           </ResponsiveContainer>
@@ -311,34 +288,40 @@ function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
         </div>
       )}
 
-      {/* Feature stability scatter */}
+      {/* Feature stability scatter — canvas */}
       <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-1" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
           Feature Enrichment Stability
         </h3>
         <p className="text-xs text-[#828282] mb-3" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
           Each point is one latent. Axes show log2(OR) in each class. Points on the diagonal have stable enrichment.
-          Spearman rho = {feature_stability.spearman_all.toFixed(3)} (all), {feature_stability.spearman_significant.toFixed(3)} (significant).
+          Spearman \u03C1 = {feature_stability.spearman_all.toFixed(3)} (all), {feature_stability.spearman_significant.toFixed(3)} (significant).
         </p>
-        <ResponsiveContainer width="100%" height={450}>
-          <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis type="number" dataKey="x" domain={[-10, 10]} tick={{ fontSize: 11 }}
-              label={{ value: "Class 1 log2(OR)", position: "bottom", offset: 15, style: { fontSize: 12 } }} />
-            <YAxis type="number" dataKey="y" domain={[-10, 10]} tick={{ fontSize: 11 }}
-              label={{ value: "Class 2 log2(OR)", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
-            <Tooltip content={<StabilityTooltip />} />
-            <ReferenceLine slope={1} stroke="#000" strokeDasharray="5 5" strokeWidth={0.8} />
-            <Scatter name="Not significant" data={nsPts} fill={COLORS.ns} fillOpacity={0.1} r={1} />
-            <Scatter name="One class" data={onePts} fill={COLORS.one} fillOpacity={0.3} r={1.5} />
-            <Scatter name="Both classes" data={bothPts} fill={COLORS.both} fillOpacity={0.4} r={2} />
-          </ScatterChart>
-        </ResponsiveContainer>
-        <div className="flex items-center justify-center gap-6 mt-2 text-xs text-[#828282]">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8a0038] inline-block" />Significant in both ({bothPts.length.toLocaleString()})</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#b88a00] inline-block" />Significant in one ({onePts.length.toLocaleString()})</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#d4d4d4] inline-block" />Not significant ({nsPts.length.toLocaleString()})</span>
-        </div>
+        <CanvasScatter
+          data={stability_scatter}
+          series={[
+            { filter: (d) => d.sig === "ns", color: COLORS.ns, opacity: 0.15, radius: 1 },
+            { filter: (d) => d.sig === "one", color: COLORS.one, opacity: 0.4, radius: 1.5 },
+            { filter: (d) => d.sig === "both", color: COLORS.both, opacity: 0.5, radius: 2 },
+          ]}
+          height={450}
+          xDomain={[-10, 10]}
+          yDomain={[-10, 10]}
+          xLabel="Class 1 log2(OR)"
+          yLabel="Class 2 log2(OR)"
+          tooltipContent={(pt) => (
+            <>
+              <p>Class 1: {pt.x.toFixed(3)}</p>
+              <p>Class 2: {pt.y.toFixed(3)}</p>
+              <p>{pt.sig === "both" ? "Significant in both" : pt.sig === "one" ? "Significant in one" : "Not significant"}</p>
+            </>
+          )}
+          legend={[
+            { color: COLORS.both, label: `Sig in both` },
+            { color: COLORS.one, label: `Sig in one` },
+            { color: COLORS.ns, label: `Not significant` },
+          ]}
+        />
       </div>
 
       {/* Key stats */}
@@ -355,18 +338,6 @@ function GeneralizationPanel({ cross_delivery, stability_scatter, cross_roc }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function StabilityTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div className="bg-white border border-gray-200 rounded-md shadow-sm p-2 text-xs">
-      <p>Class 1 log2(OR): {d.x.toFixed(3)}</p>
-      <p>Class 2 log2(OR): {d.y.toFixed(3)}</p>
-      <p className="capitalize">{d.sig === "both" ? "Significant in both" : d.sig === "one" ? "Significant in one" : "Not significant"}</p>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import useApi from "../hooks/useApi";
 import { Loading, ErrorState } from "../components/LoadingState";
+import CanvasScatter from "../components/CanvasScatter";
 import {
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 
 const COLORS = { pathogen: "#8a0038", nonpathogen: "#0d8ba1", ns: "#d4d4d4" };
@@ -11,19 +11,17 @@ const LAYER_COLORS = { 8: "#b88a00", 16: "#4e8c02", 24: "#6b4fa0", 32: "#0d8ba1"
 const CONF_COLORS = { high: "#4e8c02", medium: "#b88a00", low: "#828282" };
 
 export default function EncodedEarly() {
-  const { data, loading, error } = useApi("/api/page/encoded-early");
+  const { data: shared, loading, error } = useApi("/api/page/encoded-early/shared");
   const [activeLayer, setActiveLayer] = useState(8);
 
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} />;
 
-  const { probe_by_layer, enrichment_by_layer, volcano_by_layer, organism_labels_by_layer, layers } = data;
+  const { probe_by_layer, enrichment_by_layer, organism_labels_by_layer, layers } = shared;
   const probe = probe_by_layer[activeLayer];
   const enrichment = enrichment_by_layer[activeLayer];
-  const volcano = volcano_by_layer[activeLayer];
   const detectors = organism_labels_by_layer[activeLayer] || [];
 
-  // Bar chart data for cross-layer probe comparison
   const probeComparison = layers.map((l) => ({
     layer: `L${l}`,
     layerNum: l,
@@ -40,7 +38,7 @@ export default function EncodedEarly() {
         </p>
       </div>
 
-      {/* Cross-layer probe comparison — always visible */}
+      {/* Cross-layer probe comparison */}
       <div className="bg-white rounded-lg border border-gray-100 p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3" style={{ fontFamily: "'VT323', monospace", textTransform: "uppercase", fontSize: "1rem" }}>
           Probe Performance Across Layers
@@ -92,13 +90,12 @@ export default function EncodedEarly() {
         </div>
       </div>
 
-      {/* Active layer detail section */}
+      {/* Active layer detail */}
       <div className="bg-white rounded-lg border-2 p-5 shadow-sm" style={{ borderColor: LAYER_COLORS[activeLayer] }}>
         <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "'VT323', monospace", color: LAYER_COLORS[activeLayer] }}>
           Layer {activeLayer} Detail
         </h3>
 
-        {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
           {[
             { label: "AUROC", value: probe?.auroc?.toFixed(4) },
@@ -114,38 +111,12 @@ export default function EncodedEarly() {
           ))}
         </div>
 
-        {/* Volcano plot */}
-        <div className="mb-5">
-          <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase">Enrichment Volcano</h4>
-          <ResponsiveContainer width="100%" height={350}>
-            <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis type="number" dataKey="log2fc" name="log2FC" domain={[-6, 6]}
-                label={{ value: "log2 Fold Change", position: "bottom", offset: 15, style: { fontSize: 12 } }} />
-              <YAxis type="number" dataKey="neg_log10_pval" name="-log10(p)"
-                label={{ value: "-log10(FDR p-value)", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 12 } }} />
-              <Tooltip content={<VolcanoTooltip />} />
-              {["ns", "nonpathogen", "pathogen"].map((dir) => (
-                <Scatter
-                  key={dir}
-                  data={volcano.filter((v) => v.direction === dir)}
-                  fill={COLORS[dir]}
-                  fillOpacity={dir === "ns" ? 0.15 : 0.6}
-                  r={dir === "ns" ? 1 : 2.5}
-                />
-              ))}
-            </ScatterChart>
-          </ResponsiveContainer>
-          <div className="flex items-center justify-center gap-6 mt-2 text-xs text-[#828282]">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8a0038] inline-block" />Pathogen-enriched</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#0d8ba1] inline-block" />Non-pathogen-enriched</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#d4d4d4] inline-block" />Not significant</span>
-          </div>
-        </div>
+        {/* Volcano — lazy loaded per layer */}
+        <VolcanoPanel layer={activeLayer} />
 
-        {/* Organism detectors table (only for layers with BLAST) */}
+        {/* Organism detectors table */}
         {detectors.length > 0 ? (
-          <div>
+          <div className="mt-5">
             <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase">
               BLAST-Validated Organism Detectors ({detectors.length})
             </h4>
@@ -189,7 +160,7 @@ export default function EncodedEarly() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <div className="mt-5 bg-gray-50 rounded-lg p-4 text-center">
             <p className="text-sm text-[#828282]">
               BLAST validation not yet run for layer {activeLayer}. Enrichment data available above.
             </p>
@@ -200,15 +171,48 @@ export default function EncodedEarly() {
   );
 }
 
-function VolcanoTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
+function VolcanoPanel({ layer }) {
+  const { data: volcano, loading, error } = useApi(`/api/page/encoded-early/volcano/${layer}`);
+
+  if (loading) return <div className="h-[350px] flex items-center justify-center text-[#828282] text-sm">Loading volcano data...</div>;
+  if (error) return <div className="text-red-500 text-sm">Failed to load volcano: {error}</div>;
+
+  const canvasData = volcano.map((v) => ({
+    x: v.log2fc,
+    y: Math.min(v.neg_log10_pval, 50),
+    direction: v.direction,
+    latent_id: v.latent_id,
+  }));
+
   return (
-    <div className="bg-white border border-gray-200 rounded-md shadow-sm p-2 text-xs">
-      <p className="font-bold">Latent #{d.latent_id}</p>
-      <p>log2FC: {d.log2fc?.toFixed(3)}</p>
-      <p>-log10(p): {d.neg_log10_pval?.toFixed(2)}</p>
-      <p className="capitalize">{d.direction}</p>
+    <div>
+      <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase">Enrichment Volcano</h4>
+      <CanvasScatter
+        data={canvasData}
+        series={[
+          { filter: (d) => d.direction === "ns", color: COLORS.ns, opacity: 0.15, radius: 1.5 },
+          { filter: (d) => d.direction === "nonpathogen", color: COLORS.nonpathogen, opacity: 0.6, radius: 2.5 },
+          { filter: (d) => d.direction === "pathogen", color: COLORS.pathogen, opacity: 0.6, radius: 2.5 },
+        ]}
+        height={350}
+        xDomain={[-6, 6]}
+        yDomain={[0, 50]}
+        xLabel="log2 Fold Change"
+        yLabel="-log10(FDR p-value)"
+        tooltipContent={(pt) => (
+          <>
+            <p className="font-bold">Latent #{pt.latent_id}</p>
+            <p>log2FC: {pt.x.toFixed(3)}</p>
+            <p>-log10(p): {pt.y.toFixed(2)}</p>
+            <p className="capitalize">{pt.direction}</p>
+          </>
+        )}
+        legend={[
+          { color: COLORS.pathogen, label: "Pathogen-enriched" },
+          { color: COLORS.nonpathogen, label: "Non-pathogen-enriched" },
+          { color: COLORS.ns, label: "Not significant" },
+        ]}
+      />
     </div>
   );
 }
