@@ -41,10 +41,17 @@ from pathlib import Path
 from collections import Counter
 
 # ---------- Config ----------
+# Defaults for layer 32; overridden by --layer flag in main()
 DATA_DIR = Path("data/sae_model")
 LABEL_FILE = Path("data/human_virus_class1_labeled.jsonl")
 OUT_DIR = Path("results/organism_detectors")
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+LAYER_DATA_DIRS = {
+    8: Path("data/sae_layer8"),
+    16: Path("data/sae_layer16"),
+    24: Path("data/sae_layer24"),
+    32: Path("data/sae_model"),
+}
 
 BLAST_URL = "https://blast.ncbi.nlm.nih.gov/blast/Blast.cgi"
 BLAST_EMAIL = "mannat.v.jain@columbia.edu"
@@ -890,28 +897,78 @@ def run_part_e(enrichment, organism_labels=None):
     if organism_labels:
         high_conf = [r for r in organism_labels if r["confidence"] in ("high", "medium")][:15]
         if high_conf:
-            fig, ax = plt.subplots(figsize=(12, 8))
+            from matplotlib.patches import Patch
+            from collections import defaultdict
 
-            labels_text = [f"L{r['latent_id']}: {r['dominant_organism']} ({r['hit_consistency']})"
-                           for r in high_conf]
-            ors = [r["fisher_or"] for r in high_conf]
+            # --- Aggregate by organism ---
+            org_data = defaultdict(lambda: {"latents": [], "consistencies": [], "identities": []})
+            for r in high_conf:
+                org = r["dominant_organism"]
+                org_data[org]["latents"].append(r["latent_id"])
+                org_data[org]["consistencies"].append(int(r["hit_consistency"].split("/")[0]))
+                org_data[org]["identities"].append(float(r.get("mean_percent_identity", 0)))
 
-            # Color by organism
-            unique_orgs = list(set(r["dominant_organism"] for r in high_conf))
-            cmap = plt.cm.Set2
-            org_colors = {org: cmap(i / max(len(unique_orgs), 1)) for i, org in enumerate(unique_orgs)}
-            bar_colors = [org_colors[r["dominant_organism"]] for r in high_conf]
+            # Sort organisms by number of detector latents (descending)
+            orgs_sorted = sorted(org_data.keys(), key=lambda o: len(org_data[o]["latents"]), reverse=True)
 
-            y_pos = range(len(high_conf))
-            ax.barh(y_pos, ors, color=bar_colors, edgecolor="gray", linewidth=0.5)
+            # Build summary rows: organism, # latents, mean consistency, mean identity, max consistency
+            rows = []
+            for org in orgs_sorted:
+                d = org_data[org]
+                rows.append({
+                    "organism": org,
+                    "n_latents": len(d["latents"]),
+                    "mean_consistency": np.mean(d["consistencies"]),
+                    "max_consistency": max(d["consistencies"]),
+                    "mean_identity": np.mean(d["identities"]),
+                    "best_latent": d["latents"][np.argmax(d["consistencies"])],
+                })
+
+            # --- Figure: grouped bar chart ---
+            palette = {"Human astrovirus": "#7fb685", "Norovirus GI": "#7b8cc2",
+                       "Norovirus GII": "#d4a76a", "Human adenovirus": "#5cb8b2",
+                       "Sapovirus GI.1": "#c27b9e", "Astrovirus MLB1": "#b8a9d4",
+                       "Mamastrovirus sp.": "#d4c25c"}
+
+            fig, ax = plt.subplots(figsize=(10, 5))
+
+            y_pos = np.arange(len(rows))
+            bar_height = 0.6
+            colors = [palette.get(r["organism"], "#999999") for r in rows]
+
+            bars = ax.barh(y_pos, [r["n_latents"] for r in rows], height=bar_height,
+                           color=colors, edgecolor="white", linewidth=1.2)
+
+            # Labels on bars
+            for i, r in enumerate(rows):
+                # Number of latents inside the bar
+                ax.text(r["n_latents"] - 0.15, i, str(r["n_latents"]),
+                        va="center", ha="right", fontsize=11, fontweight="bold", color="white")
+                # Annotation to the right
+                ax.text(r["n_latents"] + 0.3, i,
+                        f"best {r['max_consistency']}/10 consistency  |  {r['mean_identity']:.1f}% avg identity",
+                        va="center", ha="left", fontsize=9, color="#444444")
+
             ax.set_yticks(y_pos)
-            ax.set_yticklabels(labels_text, fontsize=9)
-            ax.set_xlabel("Fisher Odds Ratio")
-            ax.set_title("Top Organism-Specific Pathogen Detector Latents")
+            ax.set_yticklabels([r["organism"] for r in rows], fontsize=11, fontweight="medium")
+            ax.set_xlabel("Number of Detector Latents", fontsize=11)
+            ax.set_title("Organism-Specific Pathogen Detectors Identified by BLAST",
+                         fontsize=13, fontweight="bold", pad=12)
             ax.invert_yaxis()
+            ax.set_xlim(0, max(r["n_latents"] for r in rows) + 8)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            # Subtitle
+            n_high = len([r for r in high_conf if r.get("confidence") == "high"])
+            n_med = len([r for r in high_conf if r.get("confidence") == "medium"])
+            ax.text(0.0, -0.08,
+                    f"{n_high} high-confidence + {n_med} medium-confidence detectors across {len(rows)} organisms  |  "
+                    f"All detectors fire exclusively on pathogen sequences (Fisher OR = ∞)",
+                    transform=ax.transAxes, fontsize=8.5, color="#666666", va="top")
 
             fig.tight_layout()
-            fig.savefig(OUT_DIR / "top_organism_detectors.png", dpi=150)
+            fig.savefig(OUT_DIR / "top_organism_detectors.png", dpi=200, bbox_inches="tight")
             plt.close()
             print(f"  Saved: top_organism_detectors.png")
         else:
@@ -1092,15 +1149,32 @@ def run_part_f(enrichment, organism_labels=None, blast_results=None, top_sequenc
 # ============================================================
 
 def main():
+    global DATA_DIR, OUT_DIR
     parser = argparse.ArgumentParser(description="Experiment 1: Organism-Specific Pathogen Detectors")
     parser.add_argument("--parts", default="ABCDEF",
                         help="Which parts to run (e.g., 'AB', 'C', 'DEF', 'ABCDEF')")
     parser.add_argument("--blast-test", action="store_true",
                         help="Test BLAST with 3 latents x 3 sequences only")
+    parser.add_argument("--layer", type=int, default=32,
+                        help="Which layer's SAE features to use (8, 16, 24, 32)")
     args = parser.parse_args()
+
+    # Set data/output dirs based on layer
+    if args.layer in LAYER_DATA_DIRS:
+        DATA_DIR = LAYER_DATA_DIRS[args.layer]
+    else:
+        DATA_DIR = Path(f"data/sae_layer{args.layer}")
+    if args.layer == 32:
+        OUT_DIR = Path("results/organism_detectors")
+    else:
+        OUT_DIR = Path(f"results/organism_detectors_layer{args.layer}")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     parts = args.parts.upper()
     print(f"Running parts: {parts}")
+    print(f"Layer: {args.layer}")
+    print(f"Data dir: {DATA_DIR}")
+    print(f"Output dir: {OUT_DIR}")
     print(f"BLAST test mode: {args.blast_test}")
 
     features = None
