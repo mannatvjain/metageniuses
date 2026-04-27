@@ -60,7 +60,7 @@ export default function LandingPage() {
       {/* Hero */}
       <div className="max-w-4xl mx-auto px-8 pt-16 pb-12">
         <a
-          href="/paper"
+          href="/paper.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-[#828282] hover:text-gray-600 transition-colors"
