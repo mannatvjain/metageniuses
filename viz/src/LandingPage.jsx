@@ -4,7 +4,6 @@ import { Search, BarChart3, Shield, FlaskConical } from "lucide-react";
 
 const ROTATING_WORDS = [
   { text: "Pathogenic Sequences", color: "#8a0038" },
-  { text: "Gut Microbiomes", color: "#4e8c02" },
   { text: "Viral Signatures", color: "#0d8ba1" },
   { text: "Metagenomic Reads", color: "#828282" },
   { text: "Pandemic Signals", color: "#8a0038" },
