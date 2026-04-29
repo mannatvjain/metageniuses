@@ -24,7 +24,7 @@ From `INTERPROT_REFERENCE.md` → "Feature Classification Schemes" → "By Activ
 | Whole | >80% mean activation coverage | Same |
 | Other | Doesn't fit above | Same |
 
-**Why different thresholds**: MetaGene-1 uses BPE tokenization (vocab=1024) on nucleotides, so one token can span multiple base pairs (see `METAGENE_REFERENCE.md` → "Tokenizer" — tokens range from 2-letter pairs like "AA" to 50+ nt strings). InterProt's ESM-2 uses single amino acid tokens. Our "short motif" at 30 tokens might span ~60-150 nucleotides depending on token lengths. The thresholds in `experiment_plans/activation_pattern_classification.md` (the earlier, pre-token-data spec) suggested 1-30 / 30-100 / 100-500 for short/medium/long — we use those with a 300-token cap on long motif since MetaGene-1 sequences are max 512 tokens.
+**Why different thresholds**: MetaGene-1 uses BPE tokenization (vocab=1024) on nucleotides, so one token can span multiple base pairs (see `METAGENE_REFERENCE.md` for the "Tokenizer" section; tokens range from 2-letter pairs like "AA" to 50+ nt strings). InterProt's ESM-2 uses single amino acid tokens. Our "short motif" at 30 tokens might span ~60-150 nucleotides depending on token lengths. We use buckets of 1-30 / 30-100 / 100-300 for short/medium/long with a 300-token cap on long motif since MetaGene-1 sequences are max 512 tokens.
 
 **Key InterProt finding to test against** (from `INTERPROT_REFERENCE.md` → "Key Hyperparameter Effects" → "Layer choice"):
 - "Long contiguous activation features (motif/domain) more common in earlier layers"
@@ -344,11 +344,10 @@ Before writing this script:
 
 1. Read `src/metageniuses/sae/encode_features.py` — understand the SAE encoding pipeline. Lines 54-61 show how TopK is applied at inference (per-token, not batch).
 2. Read `src/metageniuses/extraction/contracts.py` — `iter_layer_batches()` yields `(vectors: list[list[float]], metadata: list[dict])`. Each metadata dict contains `sequence_id` (str), `token_index` (int), `token_id` (int), `layer` (int). See `src/metageniuses/extraction/extractor.py:198-203` for where this metadata is written.
-3. Read `experiment_plans/activation_pattern_classification.md` — the original spec (pre-token-data). This new plan supersedes it with multi-layer support and concrete implementation details.
-4. The script MUST support two modes:
+3. The script MUST support two modes:
    - **Mode 1 (fast)**: Load pre-computed `token_activations.npz` + `token_metadata.jsonl`
    - **Mode 2 (fallback)**: Load raw activations via `iter_layer_batches()` + SAE checkpoint, compute per-token activations on the fly. This is for when the sparse NPZ hasn't been pre-computed. Use `--sae_checkpoint` and `--artifact_root` flags for this mode.
-5. Use `scipy.sparse` for all sparse matrix operations. CSR format for efficient row/column slicing. Do NOT densify the full matrix — it would be 32768 × total_tokens × 4 bytes ≈ 360 GB.
-6. Print progress every 1000 latents: `"Layer 8: classified 1000/32768 latents (14 dead, 203 point, 487 short_motif, ...)"`.
-7. The `--layers` flag should accept a comma-separated list (default: "8,16,24,32"). Process layers sequentially to manage memory.
-8. Write `latent_patterns.csv` incrementally (append after each layer) so partial results are available if the script is interrupted.
+4. Use `scipy.sparse` for all sparse matrix operations. CSR format for efficient row/column slicing. Do NOT densify the full matrix, it would be 32768 x total_tokens x 4 bytes which is approximately 360 GB.
+5. Print progress every 1000 latents: `"Layer 8: classified 1000/32768 latents (14 dead, 203 point, 487 short_motif, ...)"`.
+6. The `--layers` flag should accept a comma-separated list (default: "8,16,24,32"). Process layers sequentially to manage memory.
+7. Write `latent_patterns.csv` incrementally (append after each layer) so partial results are available if the script is interrupted.

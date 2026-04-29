@@ -1,7 +1,26 @@
-data/activations/
-data/test-activations/
-results/
+# Python
 __pycache__/
 *.pyc
+
+# OS
 .DS_Store
+
+# Generated experiment outputs
+results/
+data/activations/
+data/test-activations/
 model/
+
+# Large SAE artifacts (kept locally, not in git).
+# Exceptions below for the small metadata files we want tracked.
+data/sae_model/*
+data/sae_layer*/*
+!data/sae_model/sae_config.json
+!data/sae_model/sae_training_curves.png
+
+# Local-only paper compilation (handoff package for Overleaf agent)
+paper/results/
+
+# Frontend build artifacts (already in viz/.gitignore but listed here for clarity)
+viz/dist/
+viz/node_modules/

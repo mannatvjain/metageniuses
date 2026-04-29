@@ -2,6 +2,24 @@
 
 Reverse-chronological. Each session appends what changed, what's unfinished, what to pick up next.
 
+### 2026-04-28 (session 10, post-hackathon repo cleanup pass)
+- Read the final paper at `viz/public/paper.pdf` to anchor README numbers to paper-accurate values
+- Confirmed the live viz is fully self-contained: `useApi` maps every routed `/api/*` URL to a static JSON in `viz/public/data/`, so the deployed site does not require the backend. Backend kept per Mannat's call so judges can see the API surface, with a clarifying section in the README.
+- Confirmed `ExplorerView`, `Sidebar`, `FeaturePanel`, `DetailsPanel`, `SequenceStrip` are tracked but not routed from `App.jsx`. Left them in tree as scaffolding and noted this in INDEX.md instead of deleting.
+- Cleanup performed:
+  - Deleted root duplicate `metagene paper.pdf` (same as `papers/metagene-1.pdf`)
+  - Deleted superseded plan files: `experiment_plans/linear_probe_pathogen.md`, `experiment_plans/activation_pattern_classification.md`
+  - Renamed `experiment_plans/10_token_level_pathogen_localization.md` to `09_*` to close the numbering gap; updated EXPERIMENTS.md and the cross-reference in `08_*`
+  - Rewrote `.gitignore` to ignore `data/sae_model/*` and `data/sae_layer*/*` with explicit exceptions for `sae_config.json` and `sae_training_curves.png`; also added `paper/results/`, `viz/dist/`, `viz/node_modules/`
+  - Staged the two small SAE artifacts (`sae_config.json`, `sae_training_curves.png`) so `git status` is clean on a fresh clone
+  - Added top-level `requirements.txt` mirroring the experiment-script deps
+  - Rewrote `README.md` in the AlphaFold style: paper-accurate abstract, ASCII pipeline diagram, key-results table, repo structure, install, four quickstart paths (interactive site, reproduce, Peyton's pipeline, retrain), backend section, tests, citation, acknowledgements
+  - Updated `INDEX.md` to reflect the deletions/renames, the tracked-vs-gitignored split for SAE artifacts, the actual viz routing graph, layer-16 organism detector results, and the renamed `viz/public/paper.pdf`
+  - Updated `PLAN.md`: layer-16 organism detectors marked complete with final counts, layer-8 and layer-24 BLAST moved into a "won't ship" subsection (NCBI HTML errors during the run), Phase 5 marked complete with paper + interactive site
+- Files staged for commit: `data/sae_model/sae_config.json` (new), `data/sae_model/sae_training_curves.png` (new), `09_token_level_pathogen_localization.md` (rename). Other modifications unstaged pending review by Mannat.
+- Unfinished: nothing outstanding from this pass. Optional follow-ups: delete the unrouted Feature Explorer scaffolding if v2 is officially shelved; trim `paper/results/` from local disk now that the paper has shipped; re-run BLAST for layers 8 and 24 if NCBI cooperates and update the paper.
+- Plan impact: PLAN.md updated; no new phases.
+
 ### 2026-04-27 (session 9 — paper writing + figure generation)
 - Reviewed `paper/results/` folder (214MB, 83 data files, 34 figures, 8 markdown docs) for paper writeup
 - Confirmed layer 16 BLAST completed: 30 high-confidence + 13 medium-confidence organism detectors (vs 12 high + 15 medium at layer 32)

@@ -84,21 +84,28 @@
   - Layer 8: AUROC=0.9912, Acc=0.9545, 15,930 significant features
   - Layer 16: AUROC=0.9906, Acc=0.9540, 14,164 significant features
   - Layer 24: AUROC=0.9914, Acc=0.9535, 14,319 significant features
-- [ ] Layer 16 organism detectors (Exp 1 pipeline) — in progress (separate agent, 2026-04-26)
-  - [x] Part A: enrichment scan — 5,855 pathogen-enriched, 7 pathogen-specific (F1>0.7)
-  - [x] Part B: sequence retrieval — 50 latents x 10 seqs = 500 to BLAST
-  - [ ] Part C: BLAST — 22/50 latents submitted as of last check
-  - [ ] Parts D-F: organism labeling, figures, API payload
-- [ ] Encode per-token sparse activations (not prioritized for hackathon)
-- [ ] Layer-wise probe comparison, experiment 7 (not prioritized for hackathon)
-- [ ] Activation pattern classification, experiment 8 (not prioritized for hackathon)
-- [ ] Token-level pathogen localization, experiment 10 (not prioritized for hackathon)
+- [x] Layer 16 organism detectors (Exp 1 pipeline)
+  - [x] Part A: enrichment scan, 5,855 pathogen-enriched, 7 pathogen-specific (F1>0.7)
+  - [x] Part B: sequence retrieval, 50 latents x 10 seqs = 500 to BLAST
+  - [x] Part C: BLAST validation
+  - [x] Parts D-F: organism labels (30 high-confidence + 13 medium-confidence), figures, API payload
+- [x] Layer 24 enrichment scan (6,482 pathogen-enriched, 4,926 non-pathogen-enriched, 10 pathogen-specific F1>0.7)
+
+### Multi-Layer items deferred (won't ship for hackathon)
+- [ ] Layer 8 BLAST validation (NCBI returned HTML errors during run; permanent for hackathon)
+- [ ] Layer 24 BLAST validation (same NCBI failure mode as layer 8)
+- [ ] Encode per-token sparse activations
+- [ ] Layer-wise probe comparison (experiment 7)
+- [ ] Activation pattern classification (experiment 8)
+- [ ] Token-level pathogen localization (experiment 9)
 
 ## Phase 5: Writeup & Presentation
 - [x] Collect all experiment results into `paper/results/` with per-experiment docs + compilation
-- [ ] Write hackathon submission (Peyton working on Overleaf)
-  - [ ] Motivation: interpretable pandemic surveillance
-  - [ ] Method: SAE on MetaGene-1 (adapted from InterProt)
-  - [ ] Results: organism-specific pathogen detector features + BLAST evidence
-- [ ] Prepare figures
-- [ ] Present
+- [x] Write hackathon submission (paper at `viz/public/paper.pdf`)
+  - [x] Motivation: interpretable pandemic surveillance
+  - [x] Method: SAE on MetaGene-1 (adapted from InterProt)
+  - [x] Results: organism-specific pathogen detectors, linear probe, geometric separation, cross-delivery, multi-layer
+- [x] Prepare figures (paper figures 1-7, plus InterProt-style comparison figures in `paper/figures_interprot/`)
+- [x] Present
+- [x] Build interactive site (https://mannatvjain.github.io/metageniuses)
+- [ ] Post-hackathon: repo cleanup pass (in progress)

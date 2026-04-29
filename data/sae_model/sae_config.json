@@ -1,0 +1,18 @@
+{
+  "d_model": 4096,
+  "expansion_factor": 8,
+  "k": 64,
+  "artifact_root": "/root/results/cloud-extraction/metagene_prod_4layers_20k",
+  "transformer_layer": 32,
+  "lr": 0.0002,
+  "batch_size": 4096,
+  "n_epochs": 10,
+  "aux_loss_coeff": 0.03125,
+  "dead_steps_threshold": 200,
+  "normalize_activations": true,
+  "output_dir": "/root/sae/run1",
+  "checkpoint_every": 500,
+  "log_every": 50,
+  "device": "cuda",
+  "dtype": "float32"
+}
